@@ -1,0 +1,6 @@
+{
+  "name": "Interactive Neural Network Visualizer",
+  "description": "An educational interactive visualizer to help users learn how neural networks work internally through animations, simulations, graphs, and step-by-step calculations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
