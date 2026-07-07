@@ -377,8 +377,14 @@ export default function App() {
 
   // Auto-evaluate / feedforward pass instantly when inputs or structures change
   useEffect(() => {
-    const updatedNetwork = forwardPropagate(network, customInputs);
-    setNetwork(updatedNetwork);
+    setNetwork(prev => {
+      // Safety guard: ensure current network structure is exactly in sync with config layers
+      if (prev.layers.length !== layers.length) return prev;
+      for (let i = 0; i < layers.length; i++) {
+        if (prev.layers[i].size !== layers[i].size) return prev;
+      }
+      return forwardPropagate(prev, customInputs);
+    });
   }, [customInputs, layers, activation]);
 
   const handleSliderValueChange = (index: number, val: number) => {
@@ -401,7 +407,9 @@ export default function App() {
     });
     nextLayers.push(outputLayer);
     setLayers(nextLayers);
-    setNetwork(initializeNetwork(nextLayers));
+    const initialized = initializeNetwork(nextLayers);
+    const propagated = forwardPropagate(initialized, customInputs);
+    setNetwork(propagated);
   };
 
   const handleRemoveHiddenLayer = () => {
@@ -411,7 +419,9 @@ export default function App() {
     nextLayers.pop(); // remove hidden
     nextLayers.push(outputLayer);
     setLayers(nextLayers);
-    setNetwork(initializeNetwork(nextLayers));
+    const initialized = initializeNetwork(nextLayers);
+    const propagated = forwardPropagate(initialized, customInputs);
+    setNetwork(propagated);
   };
 
   const handleModifyNeuronCount = (layerIdx: number, increment: boolean) => {
@@ -427,7 +437,9 @@ export default function App() {
       return layer;
     });
     setLayers(nextLayers);
-    setNetwork(initializeNetwork(nextLayers));
+    const initialized = initializeNetwork(nextLayers);
+    const propagated = forwardPropagate(initialized, customInputs);
+    setNetwork(propagated);
   };
 
   const handleActivationChangeLocal = (act: 'relu' | 'sigmoid' | 'tanh' | 'linear') => {
@@ -439,7 +451,9 @@ export default function App() {
       return l;
     });
     setLayers(nextLayers);
-    setNetwork(initializeNetwork(nextLayers));
+    const initialized = initializeNetwork(nextLayers);
+    const propagated = forwardPropagate(initialized, customInputs);
+    setNetwork(propagated);
   };
 
   const handleResetWeights = () => {

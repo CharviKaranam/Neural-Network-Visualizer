@@ -423,26 +423,29 @@ export default function DashboardPanel({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch relative z-10">
         
         {/* Input Signal Node Column (3 Columns) - Dynamic mode tabs */}
-        <div id="input-controller-section" className="lg:col-span-3 bg-[#060a18]/70 border border-[#141d35]/75 rounded-2xl p-5 shadow-2xl flex flex-col justify-between backdrop-blur-md hover:border-cyan-500/20 transition-colors duration-300 relative group">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-cyan-500/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div id="input-controller-section" className="lg:col-span-3 bg-gradient-to-b from-[#0a1024]/90 to-[#040815]/90 border border-cyan-500/10 hover:border-cyan-500/30 rounded-2xl p-5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] flex flex-col justify-between backdrop-blur-md transition-all duration-500 relative group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/10 rounded-full blur-2xl opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
           
-          <div className="space-y-4">
+          <div className="space-y-4 relative z-10">
             {/* Elegant Input Mode Switcher */}
-            <div className="border-b border-[#141d35]/65 pb-3 flex flex-col gap-2.5">
+            <div className="border-b border-[#1b2647]/50 pb-3 flex flex-col gap-2.5">
               <div className="flex justify-between items-center">
-                <h3 className="text-xs font-black tracking-widest uppercase text-slate-300 font-display">Input Controller</h3>
-                <HelpCircle size={14} className="text-slate-500 hover:text-slate-350 cursor-help transition-colors" title="Toggle between manually specifying coordinate probe numbers or injecting a flowing continuous real-time dataset." />
+                <h3 className="text-xs font-black tracking-widest uppercase text-slate-200 font-mono flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                  Input Controller
+                </h3>
+                <HelpCircle size={14} className="text-slate-500 hover:text-cyan-400 cursor-help transition-colors" title="Toggle between manually specifying coordinate probe numbers or injecting a flowing continuous real-time dataset." />
               </div>
-              <div className="grid grid-cols-2 bg-[#030611] border border-[#141d35] rounded-xl p-1">
+              <div className="grid grid-cols-2 bg-[#02050e] border border-[#1b2647]/50 rounded-xl p-1 shadow-inner">
                 <button
                   onClick={() => {
                     setInputMode('manual');
                     setIsStreamingActive(false);
                   }}
-                  className={`py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all duration-200 cursor-pointer select-none ${
+                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer select-none ${
                     inputMode === 'manual' 
-                      ? 'bg-gradient-to-r from-cyan-950/40 to-indigo-950/40 border border-cyan-500/20 text-cyan-400 font-black shadow-inner' 
-                      : 'text-slate-500 hover:text-slate-300'
+                      ? 'bg-gradient-to-r from-cyan-950/60 to-indigo-950/60 border border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.1)]' 
+                      : 'text-slate-500 hover:text-slate-300 hover:bg-[#080e22]/50'
                   }`}
                 >
                   Manual Probe
@@ -454,10 +457,10 @@ export default function DashboardPanel({
                       loadPresetStream('lorenz');
                     }
                   }}
-                  className={`py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all duration-200 cursor-pointer select-none ${
+                  className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer select-none ${
                     inputMode === 'stream' 
-                      ? 'bg-gradient-to-r from-cyan-950/40 to-indigo-950/40 border border-cyan-500/20 text-cyan-400 font-black shadow-inner' 
-                      : 'text-slate-500 hover:text-slate-300'
+                      ? 'bg-gradient-to-r from-cyan-950/60 to-indigo-950/60 border border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.1)]' 
+                      : 'text-slate-500 hover:text-slate-300 hover:bg-[#080e22]/50'
                   }`}
                 >
                   Real-time Stream
@@ -475,13 +478,13 @@ export default function DashboardPanel({
                         <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
                         x<sub>{idx + 1}</sub>
                       </span>
-                      <span className="text-[10px] text-slate-500 font-mono font-bold uppercase tracking-wider">Feature</span>
+                      <span className="text-[10px] text-cyan-500/60 font-mono font-bold uppercase tracking-wider">Coordinate Feature</span>
                     </div>
                     
-                    <div className="flex items-center bg-[#030611] border border-[#141d35] rounded-xl p-1.5 justify-between focus-within:border-cyan-500/40 transition-colors">
+                    <div className="flex items-center bg-[#02050e] border border-[#1b2647]/50 rounded-xl p-1.5 justify-between focus-within:border-cyan-400/60 focus-within:shadow-[0_0_15px_rgba(34,211,238,0.1)] transition-all duration-300">
                       <button 
                         onClick={() => adjustInputValue(idx, -0.1)}
-                        className="p-1.5 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-white transition active:scale-95 cursor-pointer border border-transparent hover:border-[#141d35]"
+                        className="p-2 hover:bg-cyan-950/30 rounded-lg text-slate-400 hover:text-cyan-400 transition-all duration-200 active:scale-95 cursor-pointer border border-[#1b2647]/20 hover:border-cyan-500/20"
                       >
                         <Minus size={12} />
                       </button>
@@ -489,11 +492,11 @@ export default function DashboardPanel({
                         type="text" 
                         value={val !== undefined ? val.toFixed(1) : "0.0"}
                         onChange={(e) => handleDirectInput(idx, e.target.value)}
-                        className="bg-transparent text-center text-sm font-black text-white font-mono w-16 focus:outline-none"
+                        className="bg-transparent text-center text-sm font-black text-white font-mono w-16 focus:outline-none selection:bg-cyan-500/30"
                       />
                       <button 
                         onClick={() => adjustInputValue(idx, 0.1)}
-                        className="p-1.5 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-white transition active:scale-95 cursor-pointer border border-transparent hover:border-[#141d35]"
+                        className="p-2 hover:bg-cyan-950/30 rounded-lg text-slate-400 hover:text-cyan-400 transition-all duration-200 active:scale-95 cursor-pointer border border-[#1b2647]/20 hover:border-cyan-500/20"
                       >
                         <Plus size={12} />
                       </button>
@@ -626,121 +629,144 @@ export default function DashboardPanel({
             <div className="absolute top-0 right-2 text-[9px] font-mono font-black text-orange-400 tracking-widest uppercase bg-orange-950/20 px-2 py-0.5 rounded border border-orange-900/30">Output L2</div>
 
             <svg className="w-full h-full" viewBox="0 0 450 200" style={{ overflow: 'visible' }}>
-              {[
-                // Inputs to Hidden (3x5 connections)
-                ...[0, 1, 2].flatMap(inIdx => 
-                  [0, 1, 2, 3, 4].map(hidIdx => ({
-                    from: [40, 35 + inIdx * 65],
-                    to: [225, 20 + hidIdx * 40],
-                    color: inIdx === 0 ? "rgba(34, 211, 238, 0.22)" : inIdx === 1 ? "rgba(168, 85, 247, 0.18)" : "rgba(244, 63, 94, 0.18)",
-                    particleColor: inIdx === 0 ? "#22d3ee" : inIdx === 1 ? "#c084fc" : "#fb7185",
-                    glowFilter: inIdx === 0 ? "url(#neon-glow-cyan)" : inIdx === 1 ? "url(#neon-glow-purple)" : "url(#neon-glow-orange)",
-                    speedOffset: (inIdx * 5 + hidIdx) * 0.07
-                  }))
-                ),
-                // Hidden to Outputs (5x3 connections)
-                ...[0, 1, 2, 3, 4].flatMap(hidIdx => 
-                  [0, 1, 2].map(outIdx => ({
-                    from: [225, 20 + hidIdx * 40],
-                    to: [410, 35 + outIdx * 65],
-                    color: "rgba(249, 115, 22, 0.2)",
-                    particleColor: "#fb923c",
-                    glowFilter: "url(#neon-glow-orange)",
-                    speedOffset: (hidIdx * 3 + outIdx) * 0.06
-                  }))
-                )
-              ].map((link, idx) => (
-                <g key={idx}>
-                  <line 
-                    x1={link.from[0]} y1={link.from[1]} 
-                    x2={link.to[0]} y2={link.to[1]} 
-                    stroke={link.color} 
-                    strokeWidth="1.2" 
-                  />
-                  {(isPlayingLiveActivity || isStreamingActive) && (
-                    <circle
-                      cx={link.from[0] + (link.to[0] - link.from[0]) * ((pulseTime + link.speedOffset) % 1)}
-                      cy={link.from[1] + (link.to[1] - link.from[1]) * ((pulseTime + link.speedOffset) % 1)}
-                      r="3.2"
-                      fill={link.particleColor}
-                      filter={link.glowFilter}
-                    />
-                  )}
-                </g>
-              ))}
+              {/* Dynamic Connection lines */}
+              {layers.map((layer, lIdx) => {
+                if (lIdx === layers.length - 1) return null;
+                const nextLayer = layers[lIdx + 1];
+                
+                // Helper functions for layouts
+                const getLayerX = (idx: number) => {
+                  return 40 + (idx / (layers.length - 1)) * 370;
+                };
 
-              {/* Input Layer Nodes (3) - Styled Green */}
-              {[35, 100, 165].map((y, i) => {
-                const isActive = Math.abs(customInputs[i] || 0) > 0.5;
-                return (
-                  <g key={`in-${i}`}>
-                    <circle 
-                      cx="40" 
-                      cy={y} 
-                      r="16" 
-                      fill="#02050e" 
-                      stroke="#10b981" 
-                      strokeWidth={isActive ? "3" : "1.8"} 
-                      filter="url(#neon-glow-cyan)"
-                      className="transition-all duration-300"
-                    />
-                    <circle 
-                      cx="40" 
-                      cy={y} 
-                      r={isActive ? "8" : "6"} 
-                      fill="#10b981" 
-                      className="transition-all duration-300"
-                    />
+                const getNodeY = (nIdx: number, layerSize: number) => {
+                  if (layerSize === 3) {
+                    return 35 + nIdx * 65;
+                  }
+                  if (layerSize === 5) {
+                    return 20 + nIdx * 40;
+                  }
+                  const centerY = 100;
+                  if (layerSize === 1) return centerY;
+                  const spacing = Math.min(40, 160 / (layerSize - 1));
+                  const totalHeight = (layerSize - 1) * spacing;
+                  const startY = centerY - totalHeight / 2;
+                  return startY + nIdx * spacing;
+                };
+
+                return Array.from({ length: layer.size }).map((_, i) => (
+                  <g key={`${lIdx}_${i}`}>
+                    {Array.from({ length: nextLayer.size }).map((_, j) => {
+                      const x1 = getLayerX(lIdx);
+                      const x2 = getLayerX(lIdx + 1);
+                      const y1 = getNodeY(i, layer.size);
+                      const y2 = getNodeY(j, nextLayer.size);
+
+                      // Colors based on layers
+                      const color = lIdx === 0 
+                        ? (i === 0 ? "rgba(34, 211, 238, 0.22)" : i === 1 ? "rgba(168, 85, 247, 0.18)" : "rgba(244, 63, 94, 0.18)")
+                        : "rgba(249, 115, 22, 0.2)";
+                      const particleColor = lIdx === 0
+                        ? (i === 0 ? "#22d3ee" : i === 1 ? "#c084fc" : "#fb7185")
+                        : "#fb923c";
+                      const glowFilter = lIdx === 0
+                        ? (i === 0 ? "url(#neon-glow-cyan)" : i === 1 ? "url(#neon-glow-purple)" : "url(#neon-glow-orange)")
+                        : "url(#neon-glow-orange)";
+                      
+                      const speedOffset = (i * nextLayer.size + j) * 0.06;
+
+                      return (
+                        <g key={j}>
+                          <line 
+                            x1={x1} y1={y1} 
+                            x2={x2} y2={y2} 
+                            stroke={color} 
+                            strokeWidth="1.2" 
+                          />
+                          {(isPlayingLiveActivity || isStreamingActive) && (
+                            <circle
+                              cx={x1 + (x2 - x1) * ((pulseTime + speedOffset) % 1)}
+                              cy={y1 + (y2 - y1) * ((pulseTime + speedOffset) % 1)}
+                              r="3.2"
+                              fill={particleColor}
+                              filter={glowFilter}
+                            />
+                          )}
+                        </g>
+                      );
+                    })}
                   </g>
-                );
+                ));
               })}
 
-              {/* Hidden Layer Nodes (5) - Styled Purple/Indigo */}
-              {[20, 60, 100, 140, 180].map((y, i) => {
-                return (
-                  <g key={`hid-${i}`}>
-                    <circle 
-                      cx="225" 
-                      cy={y} 
-                      r="13" 
-                      fill="#02050e" 
-                      stroke="#818cf8" 
-                      strokeWidth="2" 
-                      filter="url(#neon-glow-purple)"
-                    />
-                    <circle 
-                      cx="225" 
-                      cy={y} 
-                      r="5" 
-                      fill="#6366f1" 
-                      className="animate-pulse"
-                      style={{ animationDuration: `${1.5 + i * 0.3}s` }}
-                    />
-                  </g>
-                );
-              })}
+              {/* Dynamic Nodes rendering */}
+              {layers.map((layer, lIdx) => {
+                const isInput = lIdx === 0;
+                const isOutput = lIdx === layers.length - 1;
+                const nodeColor = isInput ? '#10b981' : isOutput ? '#f97316' : '#818cf8';
+                const glowFilter = isInput ? 'url(#neon-glow-cyan)' : isOutput ? 'url(#neon-glow-orange)' : 'url(#neon-glow-purple)';
 
-              {/* Output Layer Nodes (3) - Styled Orange */}
-              {[35, 100, 165].map((y, i) => {
-                const prob = probabilities[i] || 0.15;
-                const isMax = prob === Math.max(...probabilities);
+                const getLayerX = (idx: number) => {
+                  return 40 + (idx / (layers.length - 1)) * 370;
+                };
+
+                const getNodeY = (nIdx: number, layerSize: number) => {
+                  if (layerSize === 3) {
+                    return 35 + nIdx * 65;
+                  }
+                  if (layerSize === 5) {
+                    return 20 + nIdx * 40;
+                  }
+                  const centerY = 100;
+                  if (layerSize === 1) return centerY;
+                  const spacing = Math.min(40, 160 / (layerSize - 1));
+                  const totalHeight = (layerSize - 1) * spacing;
+                  const startY = centerY - totalHeight / 2;
+                  return startY + nIdx * spacing;
+                };
+
                 return (
-                  <g key={`out-${i}`}>
-                    <circle 
-                      cx="410" 
-                      cy={y} 
-                      r="16" 
-                      fill="#02050e" 
-                      stroke="#f97316" 
-                      strokeWidth={isMax ? "3" : "1.8"} 
-                      filter="url(#neon-glow-orange)"
-                    />
-                    <circle 
-                      cx="410" 
-                      cy={y} 
-                      r={isMax ? "8" : "5"} 
-                      fill="#f97316" 
-                    />
+                  <g key={lIdx}>
+                    {Array.from({ length: layer.size }).map((_, nIdx) => {
+                      const cx = getLayerX(lIdx);
+                      const cy = getNodeY(nIdx, layer.size);
+
+                      let strokeWidth = "1.8";
+                      let rInner = "5";
+                      if (isInput) {
+                        const isActive = Math.abs(customInputs[nIdx] || 0) > 0.5;
+                        strokeWidth = isActive ? "3" : "1.8";
+                        rInner = isActive ? "8" : "6";
+                      } else if (isOutput) {
+                        const prob = probabilities[nIdx] || 0.15;
+                        const isMax = prob === Math.max(...probabilities);
+                        strokeWidth = isMax ? "3" : "1.8";
+                        rInner = isMax ? "8" : "5";
+                      }
+
+                      return (
+                        <g key={nIdx}>
+                          <circle 
+                            cx={cx} 
+                            cy={cy} 
+                            r={isInput || isOutput ? "16" : "13"} 
+                            fill="#02050e" 
+                            stroke={nodeColor} 
+                            strokeWidth={strokeWidth} 
+                            filter={glowFilter}
+                            className="transition-all duration-300"
+                          />
+                          <circle 
+                            cx={cx} 
+                            cy={cy} 
+                            r={rInner} 
+                            fill={nodeColor} 
+                            className={isInput || isOutput ? "transition-all duration-300" : "animate-pulse"}
+                            style={isInput || isOutput ? undefined : { animationDuration: `${1.5 + nIdx * 0.3}s` }}
+                          />
+                        </g>
+                      );
+                    })}
                   </g>
                 );
               })}
