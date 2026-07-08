@@ -418,9 +418,34 @@ output = Softmax(a)`;
           <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="space-y-4">
             
-            {/* Number of Layers Row */}
+            {/* Input Layer Neurons Control */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-mono text-slate-500 uppercase font-black tracking-wider">Number of Layers</span>
+              <span className="text-[10px] font-mono text-slate-500 uppercase font-black tracking-wider">Input Neurons (L0)</span>
+              <div className="flex items-center justify-between bg-[#030611] border border-[#141d35] p-3 rounded-xl">
+                <button
+                  onClick={() => handleModifyNeuronCount(0, false)}
+                  disabled={layers[0]?.size <= 1}
+                  className="w-10 h-10 bg-slate-900/60 border border-[#141d35] rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer disabled:opacity-20 transition active:scale-95"
+                >
+                  <Minus size={14} />
+                </button>
+                <div className="text-center">
+                  <span className="text-lg font-black font-mono text-white">{layers[0]?.size ?? 3}</span>
+                  <span className="text-[9px] text-slate-500 font-mono block">Input Nodes</span>
+                </div>
+                <button
+                  onClick={() => handleModifyNeuronCount(0, true)}
+                  disabled={layers[0]?.size >= 8}
+                  className="w-10 h-10 bg-slate-900/60 border border-[#141d35] rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer disabled:opacity-20 transition active:scale-95"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Hidden Layers Setup */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-mono text-slate-500 uppercase font-black tracking-wider">Number of Hidden Layers</span>
               <div className="flex items-center justify-between bg-[#030611] border border-[#141d35] p-3 rounded-xl">
                 <button
                   onClick={handleRemoveHiddenLayer}
@@ -430,12 +455,12 @@ output = Softmax(a)`;
                   <Minus size={14} />
                 </button>
                 <div className="text-center">
-                  <span className="text-lg font-black font-mono text-white">{layers.length}</span>
-                  <span className="text-[9px] text-slate-500 font-mono block">({layers.length - 2} Hidden Layer{layers.length - 2 > 1 ? 's' : ''})</span>
+                  <span className="text-lg font-black font-mono text-white">{layers.length - 2}</span>
+                  <span className="text-[9px] text-slate-500 font-mono block">Hidden Layer{layers.length - 2 > 1 ? 's' : ''}</span>
                 </div>
                 <button
                   onClick={handleAddHiddenLayer}
-                  disabled={layers.length >= 5}
+                  disabled={layers.length >= 7}
                   className="w-10 h-10 bg-slate-900/60 border border-[#141d35] rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer disabled:opacity-20 transition active:scale-95"
                 >
                   <Plus size={14} />
@@ -443,24 +468,59 @@ output = Softmax(a)`;
               </div>
             </div>
 
-            {/* Neurons in Hidden Layer Row */}
+            {/* Neurons in Hidden Layers */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-mono text-slate-500 uppercase font-black tracking-wider">Neurons in Hidden Layer</span>
+              <span className="text-[10px] font-mono text-slate-500 uppercase font-black tracking-wider">Neurons in Hidden Layers</span>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {layers.slice(1, layers.length - 1).map((layer, idx) => {
+                  const layerIdx = idx + 1;
+                  return (
+                    <div key={layer.id || layerIdx} className="flex items-center justify-between bg-[#030611] border border-[#141d35]/70 p-2.5 rounded-xl">
+                      <div className="text-left">
+                        <span className="text-xs font-bold text-slate-300 font-sans block">Hidden Layer #{layerIdx}</span>
+                        <span className="text-[9.5px] text-slate-500 font-mono">Size: {layer.size} neuron{layer.size > 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleModifyNeuronCount(layerIdx, false)}
+                          disabled={layer.size <= 1}
+                          className="w-8 h-8 bg-slate-900/60 border border-[#141d35] rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer disabled:opacity-20 transition active:scale-90"
+                        >
+                          <Minus size={12} />
+                        </button>
+                        <span className="text-sm font-black font-mono text-white w-5 text-center">{layer.size}</span>
+                        <button
+                          onClick={() => handleModifyNeuronCount(layerIdx, true)}
+                          disabled={layer.size >= 8}
+                          className="w-8 h-8 bg-slate-900/60 border border-[#141d35] rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer disabled:opacity-20 transition active:scale-90"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Output Layer Neurons Control */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-mono text-slate-500 uppercase font-black tracking-wider">Output Neurons (LF)</span>
               <div className="flex items-center justify-between bg-[#030611] border border-[#141d35] p-3 rounded-xl">
                 <button
-                  onClick={() => handleModifyNeuronCount(1, false)}
-                  disabled={layers[1]?.size <= 2}
+                  onClick={() => handleModifyNeuronCount(layers.length - 1, false)}
+                  disabled={layers[layers.length - 1]?.size <= 1}
                   className="w-10 h-10 bg-slate-900/60 border border-[#141d35] rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer disabled:opacity-20 transition active:scale-95"
                 >
                   <Minus size={14} />
                 </button>
                 <div className="text-center">
-                  <span className="text-lg font-black font-mono text-white">{layers[1]?.size ?? 3}</span>
-                  <span className="text-[9px] text-slate-500 font-mono block">Nodes in H1</span>
+                  <span className="text-lg font-black font-mono text-white">{layers[layers.length - 1]?.size ?? 3}</span>
+                  <span className="text-[9px] text-slate-500 font-mono block">Output Nodes</span>
                 </div>
                 <button
-                  onClick={() => handleModifyNeuronCount(1, true)}
-                  disabled={layers[1]?.size >= 8}
+                  onClick={() => handleModifyNeuronCount(layers.length - 1, true)}
+                  disabled={layers[layers.length - 1]?.size >= 8}
                   className="w-10 h-10 bg-slate-900/60 border border-[#141d35] rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer disabled:opacity-20 transition active:scale-95"
                 >
                   <Plus size={14} />

@@ -2,11 +2,11 @@
 <img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
 </div>
 
-# Run the AI app
+# Run and deploy your AI Studio app
 
 This contains everything you need to run your app locally.
 
-View our app at https://neural-networks-visualizer-144393663884.asia-southeast1.run.app
+View your app in AI Studio: https://ai.studio/apps/e7ba198f-e34b-4fe9-8b94-bb1a01243bc4
 
 ## Run Locally
 

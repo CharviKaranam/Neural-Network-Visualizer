@@ -395,7 +395,7 @@ export default function App() {
 
   // Configurations callbacks
   const handleAddHiddenLayer = () => {
-    if (layers.length >= 5) return; // limit to max 5 layers total (1 input, 3 hidden, 1 output)
+    if (layers.length >= 7) return; // limit to max 7 layers total (1 input, 5 hidden, 1 output)
     const nextLayers = [...layers];
     const outputLayer = nextLayers.pop()!;
     
@@ -424,6 +424,34 @@ export default function App() {
     setNetwork(propagated);
   };
 
+  const handleSetInputSize = (newSize: number) => {
+    const targetSize = Math.max(1, Math.min(8, newSize));
+    const nextLayers = layers.map((layer, idx) => {
+      if (idx === 0) {
+        return {
+          ...layer,
+          size: targetSize
+        };
+      }
+      return layer;
+    });
+    setLayers(nextLayers);
+
+    let nextInputs = [...customInputs];
+    if (targetSize > nextInputs.length) {
+      while (nextInputs.length < targetSize) {
+        nextInputs.push(0.5);
+      }
+    } else {
+      nextInputs = nextInputs.slice(0, targetSize);
+    }
+    setCustomInputs(nextInputs);
+
+    const initialized = initializeNetwork(nextLayers);
+    const propagated = forwardPropagate(initialized, nextInputs);
+    setNetwork(propagated);
+  };
+
   const handleModifyNeuronCount = (layerIdx: number, increment: boolean) => {
     const nextLayers = layers.map((layer, idx) => {
       if (idx === layerIdx) {
@@ -431,14 +459,29 @@ export default function App() {
         const newSize = increment ? currentSize + 1 : currentSize - 1;
         return {
           ...layer,
-          size: Math.max(2, Math.min(8, newSize))
+          size: Math.max(1, Math.min(8, newSize))
         };
       }
       return layer;
     });
     setLayers(nextLayers);
+
+    // Handle input size change specifically to resize customInputs
+    let nextInputs = [...customInputs];
+    if (layerIdx === 0) {
+      const newInputSize = nextLayers[0].size;
+      if (newInputSize > nextInputs.length) {
+        while (nextInputs.length < newInputSize) {
+          nextInputs.push(0.5);
+        }
+      } else {
+        nextInputs = nextInputs.slice(0, newInputSize);
+      }
+      setCustomInputs(nextInputs);
+    }
+
     const initialized = initializeNetwork(nextLayers);
-    const propagated = forwardPropagate(initialized, customInputs);
+    const propagated = forwardPropagate(initialized, nextInputs);
     setNetwork(propagated);
   };
 
@@ -461,6 +504,7 @@ export default function App() {
   };
 
   const handleUpdateWeight = (connId: string, value: number) => {
+    setIsTraining(false);
     setNetwork(prev => {
       const nextConnections = { ...prev.connections };
       if (nextConnections[connId]) {
@@ -478,6 +522,7 @@ export default function App() {
   };
 
   const handleUpdateBias = (layerIndex: number, nodeIndex: number, value: number) => {
+    setIsTraining(false);
     setNetwork(prev => {
       const nextNeurons = prev.neurons.map((layer, lIdx) => {
         if (lIdx === layerIndex) {
@@ -637,6 +682,8 @@ export default function App() {
             setActiveTab={setActiveTab}
             layers={layers}
             activation={activation}
+            network={network}
+            onUpdateInputSize={handleSetInputSize}
           />
         );
       case 'config':
@@ -764,39 +811,6 @@ export default function App() {
 
         {/* Sidebar Footer */}
         <div className="p-5 border-t border-[#141d35]/50 bg-slate-950/25 text-left space-y-2.5">
-          {/* Audio Synthesizer Control */}
-          <button 
-            onClick={() => {
-              const nextMuted = !isAudioMuted;
-              setIsAudioMuted(nextMuted);
-              if (!nextMuted) {
-                // Play a system ready chord as confirmation feedback
-                setTimeout(() => {
-                  audioSynth.playSystemReady();
-                }, 50);
-              }
-            }}
-            className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none group text-left ${
-              !isAudioMuted 
-                ? 'bg-purple-950/20 border-purple-500/30 text-purple-200 hover:border-purple-500/50 shadow-[0_0_12px_rgba(168,85,247,0.06)]' 
-                : 'bg-[#0b1022]/80 border-[#141d35]/40 text-slate-400 hover:border-slate-700/60'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              {!isAudioMuted ? (
-                <Volume2 size={15} className="text-purple-400 animate-bounce" />
-              ) : (
-                <VolumeX size={15} className="text-slate-500" />
-              )}
-              <span className="text-[11px] font-bold font-display">
-                {!isAudioMuted ? 'Audio Feedback Active' : 'Enable Lab Audio'}
-              </span>
-            </div>
-            <div className={`w-6 h-3.5 rounded-full p-0.5 transition-colors ${!isAudioMuted ? 'bg-purple-500' : 'bg-slate-800'}`}>
-              <div className={`w-2.5 h-2.5 rounded-full bg-white transition-transform ${!isAudioMuted ? 'translate-x-2.5' : 'translate-x-0'}`} />
-            </div>
-          </button>
-
           <div 
             className="flex items-center gap-2.5 bg-[#0b1022]/80 border border-[#141d35]/40 hover:border-cyan-500/30 p-3 rounded-xl cursor-pointer transition-all hover:shadow-[0_0_12px_rgba(6,182,212,0.06)] group" 
             onClick={() => { setIsTourOpen(true); setTourStep(0); setActiveTab('dashboard'); }}

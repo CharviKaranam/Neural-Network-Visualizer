@@ -57,16 +57,16 @@ function project3D(x: number, y: number, z: number) {
   return { x: screenX, y: screenY };
 }
 
-function getSunnyLogit(petalWidth: number, sepalWidth: number) {
-  return 2.5 - 5.0 * petalWidth + 1.2 * sepalWidth;
+function getSunnyLogit(temperature: number, humidity: number) {
+  return 2.5 - 5.0 * temperature + 1.2 * humidity;
 }
 
-function getRainyLogit(petalWidth: number, sepalWidth: number) {
-  return -1.5 + 4.5 * petalWidth - 3.0 * sepalWidth;
+function getRainyLogit(temperature: number, humidity: number) {
+  return -1.5 + 4.5 * temperature - 3.0 * humidity;
 }
 
-function getCloudyLogit(petalWidth: number, sepalWidth: number) {
-  return -0.5 + 2.0 * petalWidth + 2.5 * sepalWidth - 4.5 * petalWidth * sepalWidth;
+function getCloudyLogit(temperature: number, humidity: number) {
+  return -0.5 + 2.0 * temperature + 2.5 * humidity - 4.5 * temperature * humidity;
 }
 
 export default function GraphsPanel({
@@ -87,8 +87,8 @@ export default function GraphsPanel({
   const [activeSubTab, setActiveSubTab] = useState<'analytics' | 'boundary' | 'weather'>('analytics');
   
   // Interactive Overlapped Outputs 3D Boundary states (Image 2)
-  const [petalWidth, setPetalWidth] = useState<number>(0.6);
-  const [sepalWidth, setSepalWidth] = useState<number>(0.4);
+  const [boundaryTemperature, setBoundaryTemperature] = useState<number>(0.6);
+  const [boundaryHumidity, setBoundaryHumidity] = useState<number>(0.4);
 
   // Interactive Weather Prediction Workflow states (Image 1)
   const [weatherTemperature, setWeatherTemperature] = useState<number>(0.90);
@@ -359,6 +359,32 @@ export default function GraphsPanel({
   };
 
   const densityPoints = getActivationDensity();
+
+  // Weather predictions pre-computation
+  const w_temp = -2.50;
+  const w_humid = -2.50;
+  const b_system = 0.10;
+
+  // Input weights products
+  const prodTemp = weatherTemperature * w_temp;
+  const prodHumid = weatherHumidity * w_humid;
+
+  // Hidden Node 1
+  const node1Bias = 1.42 + prodTemp;
+  const node1PreAct = dosage * (-34.40) + node1Bias;
+  const squiggle1 = 1 / (1 + Math.exp(-node1PreAct));
+  const node1Val = squiggle1 * (-1.30);
+
+  // Hidden Node 2
+  const node2Bias = 1.39 + prodHumid;
+  const node2PreAct = dosage * (-2.52) + node2Bias;
+  const squiggle2 = 1 / (1 + Math.exp(-node2PreAct));
+  const node2Val = squiggle2 * 2.28;
+
+  // Combined
+  const rawSum = node1Val + node2Val;
+  const combinedSum = rawSum + b_system;
+  const softplus = Math.log(1 + Math.exp(combinedSum));
 
   return (
     <div id="graphs-panel" className="flex-1 flex flex-col p-6 overflow-y-auto text-slate-100 font-sans gap-6 select-none bg-gradient-to-br from-[#040815] via-[#080d1a] to-[#02050e]">
@@ -1409,7 +1435,7 @@ export default function GraphsPanel({
                   OVERLAPPED OUTPUTS: SUNNY, RAINY, CLOUDY
                 </h2>
                 <p className="text-xs text-slate-400 max-w-3xl leading-relaxed">
-                  The overlapped plot below shows the logits (responses) for all three classes. As Sepal Width increases for different values of Petal Width, the values of <strong className="text-[#10b981]">Class A / Sunny (green)</strong>, <strong className="text-[#ef4444]">Class B / Rainy (red)</strong> and <strong className="text-[#a855f7]">Class C / Cloudy (purple)</strong> change, and the class with the highest response becomes the predicted output.
+                  The overlapped plot below shows the logits (responses) for all three classes. As Humidity increases for different values of Temperature, the values of <strong className="text-[#10b981]">Class A / Sunny (green)</strong>, <strong className="text-[#ef4444]">Class B / Rainy (red)</strong> and <strong className="text-[#a855f7]">Class C / Cloudy (purple)</strong> change, and the class with the highest response becomes the predicted output.
                 </p>
               </div>
               
@@ -1417,32 +1443,32 @@ export default function GraphsPanel({
               <div className="flex flex-wrap items-center gap-4 bg-[#030611] border border-[#141d35]/60 rounded-xl p-3.5">
                 <div className="space-y-1">
                   <div className="flex justify-between text-[10px] font-mono font-bold">
-                    <span className="text-slate-400">PETAL WIDTH</span>
-                    <span className="text-purple-400">{petalWidth.toFixed(2)}</span>
+                    <span className="text-slate-400">TEMPERATURE</span>
+                    <span className="text-purple-400">{boundaryTemperature.toFixed(2)}</span>
                   </div>
                   <input 
                     type="range" 
                     min="0" 
                     max="1" 
                     step="0.01" 
-                    value={petalWidth} 
-                    onChange={(e) => setPetalWidth(parseFloat(e.target.value))}
+                    value={boundaryTemperature} 
+                    onChange={(e) => setBoundaryTemperature(parseFloat(e.target.value))}
                     className="w-32 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
                   />
                 </div>
                 
                 <div className="space-y-1">
                   <div className="flex justify-between text-[10px] font-mono font-bold">
-                    <span className="text-slate-400">SEPAL WIDTH</span>
-                    <span className="text-purple-400">{sepalWidth.toFixed(2)}</span>
+                    <span className="text-slate-400">HUMIDITY</span>
+                    <span className="text-purple-400">{boundaryHumidity.toFixed(2)}</span>
                   </div>
                   <input 
                     type="range" 
                     min="0" 
                     max="1" 
                     step="0.01" 
-                    value={sepalWidth} 
-                    onChange={(e) => setSepalWidth(parseFloat(e.target.value))}
+                    value={boundaryHumidity} 
+                    onChange={(e) => setBoundaryHumidity(parseFloat(e.target.value))}
                     className="w-32 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
                   />
                 </div>
@@ -1470,7 +1496,7 @@ export default function GraphsPanel({
                   <div className="h-px bg-slate-800 my-1" />
                   <div className="flex items-center gap-2 text-slate-400 leading-tight">
                     <span className="border border-slate-700 px-1 rounded text-[8px] uppercase">Note</span>
-                    <span>Surfaces bend across Sepal Width and Petal Width</span>
+                    <span>Surfaces bend across Humidity and Temperature</span>
                   </div>
                 </div>
 
@@ -1509,8 +1535,8 @@ export default function GraphsPanel({
                   })}
 
                   {/* Axis helper labels */}
-                  <text x={project3D(0.5, 1.1, -2.2).x} y={project3D(0.5, 1.1, -2.2).y} fill="#475569" fontSize="8" textAnchor="middle" className="font-mono font-bold uppercase tracking-wider">Sepal Width</text>
-                  <text x={project3D(1.1, 0.5, -2.2).x} y={project3D(1.1, 0.5, -2.2).y} fill="#475569" fontSize="8" textAnchor="middle" className="font-mono font-bold uppercase tracking-wider">Petal Width</text>
+                  <text x={project3D(0.5, 1.1, -2.2).x} y={project3D(0.5, 1.1, -2.2).y} fill="#475569" fontSize="8" textAnchor="middle" className="font-mono font-bold uppercase tracking-wider">Humidity</text>
+                  <text x={project3D(1.1, 0.5, -2.2).x} y={project3D(1.1, 0.5, -2.2).y} fill="#475569" fontSize="8" textAnchor="middle" className="font-mono font-bold uppercase tracking-wider">Temperature</text>
                   
                   {/* Vertical Z-axis label */}
                   <g transform={`translate(${project3D(0, 0, 0).x - 30}, ${project3D(0, 0, 0).y}) rotate(-90)`}>
@@ -1653,17 +1679,17 @@ export default function GraphsPanel({
                     });
                   })()}
 
-                  {/* ACTIVE LIVE CURSOR DOT (BASED ON PETAL/SEPAL SLIDERS) */}
+                  {/* ACTIVE LIVE CURSOR DOT (BASED ON TEMPERATURE/HUMIDITY SLIDERS) */}
                   {(() => {
-                    const curS = getSunnyLogit(petalWidth, sepalWidth);
-                    const curR = getRainyLogit(petalWidth, sepalWidth);
-                    const curC = getCloudyLogit(petalWidth, sepalWidth);
+                    const curS = getSunnyLogit(boundaryTemperature, boundaryHumidity);
+                    const curR = getRainyLogit(boundaryTemperature, boundaryHumidity);
+                    const curC = getCloudyLogit(boundaryTemperature, boundaryHumidity);
                     
-                    const floorP = project3D(petalWidth, sepalWidth, -2.2);
+                    const floorP = project3D(boundaryTemperature, boundaryHumidity, -2.2);
                     
-                    const pSunny = project3D(petalWidth, sepalWidth, curS);
-                    const pRainy = project3D(petalWidth, sepalWidth, curR);
-                    const pCloudy = project3D(petalWidth, sepalWidth, curC);
+                    const pSunny = project3D(boundaryTemperature, boundaryHumidity, curS);
+                    const pRainy = project3D(boundaryTemperature, boundaryHumidity, curR);
+                    const pCloudy = project3D(boundaryTemperature, boundaryHumidity, curC);
 
                     return (
                       <g>
@@ -1700,18 +1726,18 @@ export default function GraphsPanel({
 
               {/* Right Side: Step-by-Step Softmax Calculations */}
               {(() => {
-                const zS = getSunnyLogit(petalWidth, sepalWidth);
-                const zR = getRainyLogit(petalWidth, sepalWidth);
-                const zC = getCloudyLogit(petalWidth, sepalWidth);
+                const zS = isNaN(getSunnyLogit(boundaryTemperature, boundaryHumidity)) ? 0 : getSunnyLogit(boundaryTemperature, boundaryHumidity);
+                const zR = isNaN(getRainyLogit(boundaryTemperature, boundaryHumidity)) ? 0 : getRainyLogit(boundaryTemperature, boundaryHumidity);
+                const zC = isNaN(getCloudyLogit(boundaryTemperature, boundaryHumidity)) ? 0 : getCloudyLogit(boundaryTemperature, boundaryHumidity);
 
                 const expS = Math.exp(zS);
                 const expR = Math.exp(zR);
                 const expC = Math.exp(zC);
-                const expSum = expS + expR + expC;
+                const expSum = (expS + expR + expC) || 1;
 
-                const pS = expS / expSum;
-                const pR = expR / expSum;
-                const pC = expC / expSum;
+                const pS = isNaN(expS / expSum) ? 0.33 : expS / expSum;
+                const pR = isNaN(expR / expSum) ? 0.33 : expR / expSum;
+                const pC = isNaN(expC / expSum) ? 0.33 : expC / expSum;
 
                 let predictedClass = "CLASS A / SUNNY";
                 let predictedColor = "text-[#10b981] bg-[#10b981]/10 border-[#10b981]/20";
@@ -1863,11 +1889,17 @@ export default function GraphsPanel({
               <div className="space-y-1.5">
                 <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest block">Lecture Figure 3.1</span>
                 <h2 className="text-xl font-black text-white uppercase tracking-tight font-display flex items-center gap-2">
-                  <Sun className="text-amber-400 animate-spin" style={{ animationDuration: '15s' }} size={20} />
+                  {softplus > 1.4 ? (
+                    <Sun className="text-amber-400 animate-spin" style={{ animationDuration: '15s' }} size={20} />
+                  ) : softplus < 0.8 ? (
+                    <CloudRain className="text-sky-400 animate-bounce" size={20} />
+                  ) : (
+                    <Cloud className="text-slate-400 animate-pulse" size={20} />
+                  )}
                   NEURAL NETWORK EXAMPLE: WEATHER PREDICTOR
                 </h2>
                 <p className="text-xs text-slate-400 max-w-3xl leading-relaxed">
-                  Predict the efficacy of a dosage under variable environmental conditions. <strong>Temperature</strong> and <strong>Humidity</strong> act as weights and biases that dynamically modulate the activation thresholds of hidden nodes.
+                  Predict the weather condition under variable environmental inputs. <strong>Temperature</strong> and <strong>Humidity</strong> act as weights and biases that dynamically modulate the activation thresholds of hidden nodes.
                 </p>
               </div>
 
@@ -1920,403 +1952,440 @@ export default function GraphsPanel({
                     className="w-24 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
                   />
                 </div>
+
+                {/* Weather Badge */}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/60 border border-slate-850">
+                  <div className="flex items-center justify-center">
+                    {softplus > 1.4 ? (
+                      <Sun className="text-amber-400 animate-spin" style={{ animationDuration: '20s' }} size={18} />
+                    ) : softplus < 0.8 ? (
+                      <CloudRain className="text-sky-400 animate-bounce" size={18} />
+                    ) : (
+                      <Cloud className="text-slate-400" size={18} />
+                    )}
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-[8px] font-mono font-bold text-slate-500 uppercase tracking-widest leading-none">PREDICTION</span>
+                    <span className={`text-[10px] font-black tracking-wider leading-none uppercase ${
+                      softplus > 1.4 ? 'text-amber-400' : softplus < 0.8 ? 'text-sky-400' : 'text-slate-400'
+                    }`}>
+                      {softplus > 1.4 ? 'Sunny' : softplus < 0.8 ? 'Rainy' : 'Cloudy'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Calculations logic for Weather model */}
-            {(() => {
-              const w_temp = 0.80;
-              const w_humid = -0.50;
-              const b_system = 0.10;
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Left: SVG Diagram Grid */}
+              <div className="lg:col-span-8 bg-[#030611]/80 border border-[#141d35]/40 rounded-2xl p-4 flex flex-col items-center justify-center relative min-h-[420px]">
+                
+                {/* Flowchart Schematic in Vector */}
+                <svg className="w-full h-full min-h-[380px]" viewBox="0 0 650 380">
+                  
+                  {/* Connection lines back-glow */}
+                  <path d={`M 110 80 L 160 80 L 210 125`} stroke="rgba(245,158,11,0.15)" strokeWidth="6" fill="none" />
+                  <path d={`M 110 240 L 160 240 L 210 195`} stroke="rgba(245,158,11,0.15)" strokeWidth="6" fill="none" />
+                  
+                  {/* Flow pathway from START block */}
+                  <path d={`M 255 160 C 290 160, 310 90, 335 90`} stroke="rgba(56,189,248,0.25)" strokeWidth="4" fill="none" />
+                  <path d={`M 255 160 C 290 160, 310 230, 335 230`} stroke="rgba(245,158,11,0.25)" strokeWidth="4" fill="none" />
 
-              // Input weights products
-              const prodTemp = weatherTemperature * w_temp;
-              const prodHumid = weatherHumidity * w_humid;
+                  {/* Pathways from squiggle activation to sum */}
+                  <path d={`M 445 90 C 475 90, 485 160, 500 160`} stroke="rgba(56,189,248,0.25)" strokeWidth="4" fill="none" />
+                  <path d={`M 445 230 C 475 230, 485 160, 500 160`} stroke="rgba(245,158,11,0.25)" strokeWidth="4" fill="none" />
 
-              // Hidden Node 1
-              const node1Bias = 1.42 + prodTemp;
-              const node1PreAct = dosage * (-34.40) + node1Bias;
-              const squiggle1 = 1 / (1 + Math.exp(-node1PreAct));
-              const node1Val = squiggle1 * (-1.30);
+                  {/* Path to Softplus and Output */}
+                  <line x1="535" y1="160" x2="560" y2="160" stroke="#10b981" strokeWidth="3" />
+                  <line x1="600" y1="160" x2="615" y2="160" stroke="#10b981" strokeWidth="3" />
 
-              // Hidden Node 2
-              const node2Bias = 1.39 + prodHumid;
-              const node2PreAct = dosage * (-2.52) + node2Bias;
-              const squiggle2 = 1 / (1 + Math.exp(-node2PreAct));
-              const node2Val = squiggle2 * 2.28;
+                  {/* Standard strokes for lines */}
+                  {/* Inputs weight connectives */}
+                  <line x1="110" y1="80" x2="160" y2="80" stroke="#1e293b" strokeWidth="2" />
+                  <line x1="160" y1="80" x2="210" y2="125" stroke="#1e293b" strokeWidth="2" />
+                  
+                  <line x1="110" y1="240" x2="160" y2="240" stroke="#1e293b" strokeWidth="2" />
+                  <line x1="160" y1="240" x2="210" y2="195" stroke="#1e293b" strokeWidth="2" />
 
-              // Combined
-              const rawSum = node1Val + node2Val;
-              const combinedSum = rawSum + b_system;
-              const softplus = Math.log(1 + Math.exp(combinedSum));
+                  {/* 1. INPUT FEATURES BOX: Temperature */}
+                  <g transform="translate(15, 45)">
+                    <rect x="0" y="0" width="95" height="70" rx="10" fill="#030611" stroke="#334155" strokeWidth="1.5" />
+                    <text x="47" y="18" fill="#94a3b8" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono uppercase tracking-wide">Temperature</text>
+                    <text x="47" y="28" fill="#475569" fontSize="7" className="font-mono" textAnchor="middle">(x1)</text>
+                    <text x="47" y="48" fill="#fff" fontSize="15" fontWeight="black" textAnchor="middle" className="font-mono">{weatherTemperature.toFixed(2)}</text>
+                    <text x="47" y="58" fill="#f59e0b" fontSize="7" fontWeight="bold" textAnchor="middle" className="font-mono">({weatherTemperature > 0.7 ? 'HIGH' : (weatherTemperature < 0.3 ? 'LOW' : 'MID')})</text>
+                  </g>
 
-              return (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  {/* Left: SVG Diagram Grid */}
-                  <div className="lg:col-span-8 bg-[#030611]/80 border border-[#141d35]/40 rounded-2xl p-4 flex flex-col items-center justify-center relative min-h-[420px]">
+                  {/* 2. INPUT FEATURES BOX: Humidity */}
+                  <g transform="translate(15, 205)">
+                    <rect x="0" y="0" width="95" height="70" rx="10" fill="#030611" stroke="#334155" strokeWidth="1.5" />
+                    <text x="47" y="18" fill="#94a3b8" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono uppercase tracking-wide">Humidity</text>
+                    <text x="47" y="28" fill="#475569" fontSize="7" className="font-mono" textAnchor="middle">(x2)</text>
+                    <text x="47" y="48" fill="#fff" fontSize="15" fontWeight="black" textAnchor="middle" className="font-mono">{weatherHumidity.toFixed(2)}</text>
+                    <text x="47" y="58" fill="#0284c7" fontSize="7" fontWeight="bold" textAnchor="middle" className="font-mono">({weatherHumidity > 0.7 ? 'HIGH' : (weatherHumidity < 0.3 ? 'LOW' : 'MID')})</text>
+                  </g>
+
+                  {/* Weight multiplier bubbles */}
+                  {/* Temp weight multiplier box */}
+                  <g transform="translate(145, 115)">
+                    <rect x="0" y="0" width="65" height="20" rx="4" fill="#060a18" stroke="#10b981" strokeWidth="1" />
+                    <text x="32" y="13" fill="#10b981" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono">w1 = -2.50</text>
+                  </g>
+                  
+                  {/* Humid weight multiplier box */}
+                  <g transform="translate(145, 185)">
+                    <rect x="0" y="0" width="65" height="20" rx="4" fill="#060a18" stroke="#ef4444" strokeWidth="1" />
+                    <text x="32" y="13" fill="#ef4444" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono">w2 = -2.50</text>
+                  </g>
+
+                  {/* START BLOCK: Dosage */}
+                  <g transform="translate(200, 125)">
+                    <rect x="0" y="0" width="75" height="70" rx="10" fill="#030611" stroke="#38bdf8" strokeWidth="2" className="shadow-lg" />
+                    <text x="37" y="15" fill="#38bdf8" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono uppercase tracking-widest">START</text>
+                    <text x="37" y="32" fill="#94a3b8" fontSize="9" textAnchor="middle" className="font-mono">Dosage</text>
+                    <text x="37" y="44" fill="#475569" fontSize="7" textAnchor="middle" className="font-mono">(Lowest Dosage)</text>
+                    <text x="37" y="60" fill="#fff" fontSize="13" fontWeight="black" textAnchor="middle" className="font-mono">= {dosage.toFixed(2)}</text>
+                  </g>
+
+                  {/* UPPER ACTIVE STREAM PATH BLOCK */}
+                  <g transform="translate(325, 40)">
+                    {/* Upper Multiplier box */}
+                    <rect x="0" y="5" width="40" height="20" rx="4" fill="#060a18" stroke="#475569" strokeWidth="1" />
+                    <text x="20" y="17" fill="#cbd5e1" fontSize="8" textAnchor="middle" className="font-mono">x -34.40</text>
                     
-                    {/* Flowchart Schematic in Vector */}
-                    <svg className="w-full h-full min-h-[380px]" viewBox="0 0 650 380">
+                    {/* Connecting Line */}
+                    <line x1="40" y1="15" x2="55" y2="15" stroke="#1e293b" strokeWidth="1.5" />
+                    <text x="47" y="11" fill="#475569" fontSize="7" className="font-mono" textAnchor="middle">{prodTemp >= 0 ? '+' : ''}{prodTemp.toFixed(2)}</text>
+
+                    {/* Upper Bias sum node */}
+                    <rect x="55" y="0" width="42" height="30" rx="5" fill="#030611" stroke="#0284c7" strokeWidth="1.5" />
+                    <text x="76" y="12" fill="#0284c7" fontSize="7" fontWeight="bold" textAnchor="middle" className="font-mono">BIAS (b)</text>
+                    <text x="76" y="24" fill="#fff" fontSize="10" fontWeight="bold" textAnchor="middle" className="font-mono">{node1Bias >= 0 ? '+' : ''}{node1Bias.toFixed(2)}</text>
+
+                    {/* Connecting Line */}
+                    <line x1="97" y1="15" x2="103" y2="15" stroke="#1e293b" strokeWidth="1.5" />
+
+                    {/* Squiggle Activation Card (Sigmoid 1) */}
+                    <g>
+                      <rect x="103" y="-12" width="60" height="54" rx="6" fill="#030611" stroke="#0284c7" strokeWidth="1.5" />
                       
-                      {/* Connection lines back-glow */}
-                      <path d={`M 110 80 L 160 80 L 210 125`} stroke="rgba(245,158,11,0.15)" strokeWidth="6" fill="none" />
-                      <path d={`M 110 240 L 160 240 L 210 195`} stroke="rgba(245,158,11,0.15)" strokeWidth="6" fill="none" />
+                      {/* Grid Axes */}
+                      <line x1="103" y1="15" x2="163" y2="15" stroke="#141d35" strokeWidth="0.8" strokeDasharray="1 2" />
+                      <line x1="133" y1="-12" x2="133" y2="42" stroke="#141d35" strokeWidth="0.8" strokeDasharray="1 2" />
+
+                      {/* Plotted Sigmoid curve */}
+                      {(() => {
+                        const points = [];
+                        for (let i = 0; i <= 10; i++) {
+                          const t = i / 10;
+                          const zVal = -6 + t * 12;
+                          const act = 1 / (1 + Math.exp(-zVal));
+                          const px = 103 + t * 60;
+                          const py = 38 - act * 46;
+                          points.push(`${px},${py}`);
+                        }
+                        return <polyline points={points.join(' ')} fill="none" stroke="#0284c7" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" />;
+                      })()}
+
+                      {/* Dynamic Input Value Marker */}
+                      {(() => {
+                        const clampedZ = Math.max(-6, Math.min(6, node1PreAct));
+                        const dotT = (clampedZ - (-6)) / 12;
+                        const dotX = 103 + dotT * 60;
+                        const dotY = 38 - squiggle1 * 46;
+                        return (
+                          <g>
+                            <line x1={dotX} y1="-12" x2={dotX} y2="42" stroke="rgba(2, 132, 199, 0.45)" strokeWidth="0.8" strokeDasharray="1 1" />
+                            <line x1="103" y1={dotY} x2="163" y2={dotY} stroke="rgba(2, 132, 199, 0.45)" strokeWidth="0.8" strokeDasharray="1 1" />
+                            <circle cx={dotX} cy={dotY} r="4" fill="#0284c7" fillOpacity="0.4" className="animate-pulse" />
+                            <circle cx={dotX} cy={dotY} r="2.2" fill="#0284c7" stroke="#fff" strokeWidth="0.8" />
+                          </g>
+                        );
+                      })()}
+
+                      {/* Mini Labels */}
+                      <text x="107" y="-3" fill="#0284c7" fontSize="5" fontWeight="bold" className="font-mono">SIGMOID</text>
+                      <text x="159" y="-3" fill="#cbd5e1" fontSize="5.5" fontWeight="bold" textAnchor="end" className="font-mono">s1: {squiggle1.toFixed(2)}</text>
+                      <text x="107" y="38" fill="#64748b" fontSize="4.5" className="font-mono">z1: {node1PreAct.toFixed(1)}</text>
+                    </g>
+
+                    {/* Connecting Line */}
+                    <line x1="163" y1="15" x2="168" y2="15" stroke="#1e293b" strokeWidth="1.5" />
+
+                    {/* Output weight */}
+                    <rect x="168" y="5" width="32" height="20" rx="4" fill="#060a18" stroke="#475569" strokeWidth="1" />
+                    <text x="184" y="17" fill="#cbd5e1" fontSize="8" textAnchor="middle" className="font-mono">x -1.30</text>
+                    
+                    {/* Real-time value note bubble */}
+                    <text x="184" y="34" fill="#ef4444" fontSize="7.5" fontWeight="bold" textAnchor="middle" className="font-mono">{node1Val.toFixed(2)}</text>
+                  </g>
+
+                  {/* LOWER ACTIVE STREAM PATH BLOCK */}
+                  <g transform="translate(325, 180)">
+                    {/* Lower Multiplier box */}
+                    <rect x="0" y="25" width="40" height="20" rx="4" fill="#060a18" stroke="#475569" strokeWidth="1" />
+                    <text x="20" y="37" fill="#cbd5e1" fontSize="8" textAnchor="middle" className="font-mono">x -2.52</text>
+                    
+                    {/* Connecting Line */}
+                    <line x1="40" y1="35" x2="55" y2="35" stroke="#1e293b" strokeWidth="1.5" />
+                    <text x="47" y="31" fill="#475569" fontSize="7" className="font-mono" textAnchor="middle">{prodHumid >= 0 ? '+' : ''}{prodHumid.toFixed(2)}</text>
+
+                    {/* Lower Bias sum node */}
+                    <rect x="55" y="20" width="42" height="30" rx="5" fill="#030611" stroke="#f59e0b" strokeWidth="1.5" />
+                    <text x="76" y="32" fill="#f59e0b" fontSize="7" fontWeight="bold" textAnchor="middle" className="font-mono">BIAS (b)</text>
+                    <text x="76" y="44" fill="#fff" fontSize="10" fontWeight="bold" textAnchor="middle" className="font-mono">{node2Bias >= 0 ? '+' : ''}{node2Bias.toFixed(2)}</text>
+
+                    {/* Connecting Line */}
+                    <line x1="97" y1="35" x2="103" y2="35" stroke="#1e293b" strokeWidth="1.5" />
+
+                    {/* Squiggle Activation Card (Sigmoid 2) */}
+                    <g>
+                      <rect x="103" y="8" width="60" height="54" rx="6" fill="#030611" stroke="#f59e0b" strokeWidth="1.5" />
                       
-                      {/* Flow pathway from START block */}
-                      <path d={`M 255 160 C 290 160, 310 90, 335 90`} stroke="rgba(56,189,248,0.25)" strokeWidth="4" fill="none" />
-                      <path d={`M 255 160 C 290 160, 310 230, 335 230`} stroke="rgba(245,158,11,0.25)" strokeWidth="4" fill="none" />
+                      {/* Grid Axes */}
+                      <line x1="103" y1="35" x2="163" y2="35" stroke="#141d35" strokeWidth="0.8" strokeDasharray="1 2" />
+                      <line x1="133" y1="8" x2="133" y2="62" stroke="#141d35" strokeWidth="0.8" strokeDasharray="1 2" />
 
-                      {/* Pathways from squiggle activation to sum */}
-                      <path d={`M 445 90 C 475 90, 485 160, 500 160`} stroke="rgba(56,189,248,0.25)" strokeWidth="4" fill="none" />
-                      <path d={`M 445 230 C 475 230, 485 160, 500 160`} stroke="rgba(245,158,11,0.25)" strokeWidth="4" fill="none" />
+                      {/* Plotted Sigmoid curve */}
+                      {(() => {
+                        const points = [];
+                        for (let i = 0; i <= 10; i++) {
+                          const t = i / 10;
+                          const zVal = -6 + t * 12;
+                          const act = 1 / (1 + Math.exp(-zVal));
+                          const px = 103 + t * 60;
+                          const py = 58 - act * 46;
+                          points.push(`${px},${py}`);
+                        }
+                        return <polyline points={points.join(' ')} fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" />;
+                      })()}
 
-                      {/* Path to Softplus and Output */}
-                      <line x1="535" y1="160" x2="560" y2="160" stroke="#10b981" strokeWidth="3" />
-                      <line x1="600" y1="160" x2="615" y2="160" stroke="#10b981" strokeWidth="3" />
+                      {/* Dynamic Input Value Marker */}
+                      {(() => {
+                        const clampedZ2 = Math.max(-6, Math.min(6, node2PreAct));
+                        const dotT2 = (clampedZ2 - (-6)) / 12;
+                        const dotX2 = 103 + dotT2 * 60;
+                        const dotY2 = 58 - squiggle2 * 46;
+                        return (
+                          <g>
+                            <line x1={dotX2} y1="8" x2={dotX2} y2="62" stroke="rgba(245, 158, 11, 0.45)" strokeWidth="0.8" strokeDasharray="1 1" />
+                            <line x1="103" y1={dotY2} x2="163" y2={dotY2} stroke="rgba(245, 158, 11, 0.45)" strokeWidth="0.8" strokeDasharray="1 1" />
+                            <circle cx={dotX2} cy={dotY2} r="4" fill="#f59e0b" fillOpacity="0.4" className="animate-pulse" />
+                            <circle cx={dotX2} cy={dotY2} r="2.2" fill="#f59e0b" stroke="#fff" strokeWidth="0.8" />
+                          </g>
+                        );
+                      })()}
 
-                      {/* Standard strokes for lines */}
-                      {/* Inputs weight connectives */}
-                      <line x1="110" y1="80" x2="160" y2="80" stroke="#1e293b" strokeWidth="2" />
-                      <line x1="160" y1="80" x2="210" y2="125" stroke="#1e293b" strokeWidth="2" />
-                      
-                      <line x1="110" y1="240" x2="160" y2="240" stroke="#1e293b" strokeWidth="2" />
-                      <line x1="160" y1="240" x2="210" y2="195" stroke="#1e293b" strokeWidth="2" />
+                      {/* Mini Labels */}
+                      <text x="107" y="17" fill="#f59e0b" fontSize="5" fontWeight="bold" className="font-mono">SIGMOID</text>
+                      <text x="159" y="17" fill="#cbd5e1" fontSize="5.5" fontWeight="bold" textAnchor="end" className="font-mono">s2: {squiggle2.toFixed(2)}</text>
+                      <text x="107" y="58" fill="#64748b" fontSize="4.5" className="font-mono">z2: {node2PreAct.toFixed(1)}</text>
+                    </g>
 
-                      {/* 1. INPUT FEATURES BOX: Temperature */}
-                      <g transform="translate(15, 45)">
-                        <rect x="0" y="0" width="95" height="70" rx="10" fill="#030611" stroke="#334155" strokeWidth="1.5" />
-                        <text x="47" y="18" fill="#94a3b8" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono uppercase tracking-wide">Temperature</text>
-                        <text x="47" y="28" fill="#475569" fontSize="7" className="font-mono" textAnchor="middle">(x1)</text>
-                        <text x="47" y="48" fill="#fff" fontSize="15" fontWeight="black" textAnchor="middle" className="font-mono">{weatherTemperature.toFixed(2)}</text>
-                        <text x="47" y="58" fill="#f59e0b" fontSize="7" fontWeight="bold" textAnchor="middle" className="font-mono">({weatherTemperature > 0.7 ? 'HIGH' : (weatherTemperature < 0.3 ? 'LOW' : 'MID')})</text>
-                      </g>
+                    {/* Connecting Line */}
+                    <line x1="163" y1="35" x2="168" y2="35" stroke="#1e293b" strokeWidth="1.5" />
 
-                      {/* 2. INPUT FEATURES BOX: Humidity */}
-                      <g transform="translate(15, 205)">
-                        <rect x="0" y="0" width="95" height="70" rx="10" fill="#030611" stroke="#334155" strokeWidth="1.5" />
-                        <text x="47" y="18" fill="#94a3b8" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono uppercase tracking-wide">Humidity</text>
-                        <text x="47" y="28" fill="#475569" fontSize="7" className="font-mono" textAnchor="middle">(x2)</text>
-                        <text x="47" y="48" fill="#fff" fontSize="15" fontWeight="black" textAnchor="middle" className="font-mono">{weatherHumidity.toFixed(2)}</text>
-                        <text x="47" y="58" fill="#0284c7" fontSize="7" fontWeight="bold" textAnchor="middle" className="font-mono">({weatherHumidity > 0.7 ? 'HIGH' : (weatherHumidity < 0.3 ? 'LOW' : 'MID')})</text>
-                      </g>
+                    {/* Output weight */}
+                    <rect x="168" y="25" width="32" height="20" rx="4" fill="#060a18" stroke="#475569" strokeWidth="1" />
+                    <text x="184" y="37" fill="#cbd5e1" fontSize="8" textAnchor="middle" className="font-mono">x 2.28</text>
 
-                      {/* Weight multiplier bubbles */}
-                      {/* Temp weight multiplier box */}
-                      <g transform="translate(145, 115)">
-                        <rect x="0" y="0" width="65" height="20" rx="4" fill="#060a18" stroke="#10b981" strokeWidth="1" />
-                        <text x="32" y="13" fill="#10b981" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono">w1 = +0.80</text>
-                      </g>
-                      
-                      {/* Humid weight multiplier box */}
-                      <g transform="translate(145, 185)">
-                        <rect x="0" y="0" width="65" height="20" rx="4" fill="#060a18" stroke="#ef4444" strokeWidth="1" />
-                        <text x="32" y="13" fill="#ef4444" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono">w2 = -0.50</text>
-                      </g>
+                    {/* Real-time value note bubble */}
+                    <text x="184" y="17" fill="#10b981" fontSize="7.5" fontWeight="bold" textAnchor="middle" className="font-mono">+{node2Val.toFixed(2)}</text>
+                  </g>
 
-                      {/* START BLOCK: Dosage */}
-                      <g transform="translate(200, 125)">
-                        <rect x="0" y="0" width="75" height="70" rx="10" fill="#030611" stroke="#38bdf8" strokeWidth="2" className="shadow-lg" />
-                        <text x="37" y="15" fill="#38bdf8" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono uppercase tracking-widest">START</text>
-                        <text x="37" y="32" fill="#94a3b8" fontSize="9" textAnchor="middle" className="font-mono">Dosage</text>
-                        <text x="37" y="44" fill="#475569" fontSize="7" textAnchor="middle" className="font-mono">(Lowest Dosage)</text>
-                        <text x="37" y="60" fill="#fff" fontSize="13" fontWeight="black" textAnchor="middle" className="font-mono">= {dosage.toFixed(2)}</text>
-                      </g>
+                  {/* SUMMING JUNCTION: Σ */}
+                  <g transform="translate(500, 135)">
+                    <circle cx="25" cy="25" r="22" fill="#a855f7" fillOpacity="0.1" stroke="#a855f7" strokeWidth="2.5" />
+                    <text x="25" y="32" fill="#fff" fontSize="22" fontWeight="black" textAnchor="middle">Σ</text>
+                    
+                    {/* Offset line and tooltip text */}
+                    <text x="25" y="-12" fill="#a855f7" fontSize="8" fontWeight="black" textAnchor="middle" className="font-mono">+ bias (b)</text>
+                    <text x="25" y="-3" fill="#fff" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono">+0.10</text>
+                    
+                    {/* Real-time sum result */}
+                    <text x="25" y="60" fill="#a855f7" fontSize="9" fontWeight="black" textAnchor="middle" className="font-mono">= {combinedSum.toFixed(2)}</text>
+                  </g>
 
-                      {/* UPPER ACTIVE STREAM PATH BLOCK */}
-                      <g transform="translate(325, 40)">
-                        {/* Upper Multiplier box */}
-                        <rect x="0" y="5" width="40" height="20" rx="4" fill="#060a18" stroke="#475569" strokeWidth="1" />
-                        <text x="20" y="17" fill="#cbd5e1" fontSize="8" textAnchor="middle" className="font-mono">x -34.40</text>
-                        
-                        {/* Connecting Line */}
-                        <line x1="40" y1="15" x2="55" y2="15" stroke="#1e293b" strokeWidth="1.5" />
-                        <text x="47" y="11" fill="#475569" fontSize="7" className="font-mono" textAnchor="middle">+{prodTemp.toFixed(2)}</text>
+                  {/* SOFTPLUS (Activation) */}
+                  <g transform="translate(565, 125)">
+                    <rect x="0" y="0" width="60" height="54" rx="6" fill="#030611" stroke="#10b981" strokeWidth="1.5" />
+                    
+                    {/* Grid Axes */}
+                    <line x1="0" y1="27" x2="60" y2="27" stroke="#141d35" strokeWidth="0.8" strokeDasharray="1 2" />
+                    <line x1="30" y1="0" x2="30" y2="54" stroke="#141d35" strokeWidth="0.8" strokeDasharray="1 2" />
 
-                        {/* Upper Bias sum node */}
-                        <rect x="55" y="0" width="42" height="30" rx="5" fill="#030611" stroke="#0284c7" strokeWidth="1.5" />
-                        <text x="76" y="12" fill="#0284c7" fontSize="7" fontWeight="bold" textAnchor="middle" className="font-mono">BIAS (b)</text>
-                        <text x="76" y="24" fill="#fff" fontSize="10" fontWeight="bold" textAnchor="middle" className="font-mono">+{node1Bias.toFixed(2)}</text>
+                    {/* Plotted Softplus curve */}
+                    {(() => {
+                      const points = [];
+                      for (let i = 0; i <= 10; i++) {
+                        const t = i / 10;
+                        const zVal = -4 + t * 8;
+                        const act = Math.log(1 + Math.exp(zVal));
+                        const px = t * 60;
+                        const py = 50 - (Math.min(4, act) / 4) * 40;
+                        points.push(`${px},${py}`);
+                      }
+                      return <polyline points={points.join(' ')} fill="none" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" />;
+                    })()}
 
-                        {/* Connecting Line */}
-                        <line x1="97" y1="15" x2="103" y2="15" stroke="#1e293b" strokeWidth="1.5" />
-
-                        {/* Squiggle Activation Card (Sigmoid 1) */}
+                    {/* Dynamic Input Value Marker */}
+                    {(() => {
+                      const clampedSum = Math.max(-4, Math.min(4, combinedSum));
+                      const dotT3 = (clampedSum - (-4)) / 8;
+                      const dotX3 = dotT3 * 60;
+                      const dotY3 = 50 - (Math.min(4, softplus) / 4) * 40;
+                      return (
                         <g>
-                          <rect x="103" y="-12" width="60" height="54" rx="6" fill="#030611" stroke="#0284c7" strokeWidth="1.5" />
-                          
-                          {/* Grid Axes */}
-                          <line x1="103" y1="15" x2="163" y2="15" stroke="#141d35" strokeWidth="0.8" strokeDasharray="1 2" />
-                          <line x1="133" y1="-12" x2="133" y2="42" stroke="#141d35" strokeWidth="0.8" strokeDasharray="1 2" />
-
-                          {/* Plotted Sigmoid curve */}
-                          {(() => {
-                            const points = [];
-                            for (let i = 0; i <= 10; i++) {
-                              const t = i / 10;
-                              const zVal = -6 + t * 12;
-                              const act = 1 / (1 + Math.exp(-zVal));
-                              const px = 103 + t * 60;
-                              const py = 38 - act * 46;
-                              points.push(`${px},${py}`);
-                            }
-                            return <polyline points={points.join(' ')} fill="none" stroke="#0284c7" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" />;
-                          })()}
-
-                          {/* Dynamic Input Value Marker */}
-                          {(() => {
-                            const clampedZ = Math.max(-6, Math.min(6, node1PreAct));
-                            const dotT = (clampedZ - (-6)) / 12;
-                            const dotX = 103 + dotT * 60;
-                            const dotY = 38 - squiggle1 * 46;
-                            return (
-                              <g>
-                                <line x1={dotX} y1="-12" x2={dotX} y2="42" stroke="rgba(2, 132, 199, 0.45)" strokeWidth="0.8" strokeDasharray="1 1" />
-                                <line x1="103" y1={dotY} x2="163" y2={dotY} stroke="rgba(2, 132, 199, 0.45)" strokeWidth="0.8" strokeDasharray="1 1" />
-                                <circle cx={dotX} cy={dotY} r="4" fill="#0284c7" fillOpacity="0.4" className="animate-pulse" />
-                                <circle cx={dotX} cy={dotY} r="2.2" fill="#0284c7" stroke="#fff" strokeWidth="0.8" />
-                              </g>
-                            );
-                          })()}
-
-                          {/* Mini Labels */}
-                          <text x="107" y="-3" fill="#0284c7" fontSize="5" fontWeight="bold" className="font-mono">SIGMOID</text>
-                          <text x="159" y="-3" fill="#cbd5e1" fontSize="5.5" fontWeight="bold" textAnchor="end" className="font-mono">s1: {squiggle1.toFixed(2)}</text>
-                          <text x="107" y="38" fill="#64748b" fontSize="4.5" className="font-mono">z1: {node1PreAct.toFixed(1)}</text>
+                          <line x1={dotX3} y1="0" x2={dotX3} y2="54" stroke="rgba(16, 185, 129, 0.45)" strokeWidth="0.8" strokeDasharray="1 1" />
+                          <line x1="0" y1={dotY3} x2="60" y2={dotY3} stroke="rgba(16, 185, 129, 0.45)" strokeWidth="0.8" strokeDasharray="1 1" />
+                          <circle cx={dotX3} cy={dotY3} r="4" fill="#10b981" fillOpacity="0.4" className="animate-pulse" />
+                          <circle cx={dotX3} cy={dotY3} r="2.2" fill="#10b981" stroke="#fff" strokeWidth="0.8" />
                         </g>
+                      );
+                    })()}
 
-                        {/* Connecting Line */}
-                        <line x1="163" y1="15" x2="168" y2="15" stroke="#1e293b" strokeWidth="1.5" />
+                    {/* Mini Labels */}
+                    <text x="4" y="8" fill="#10b981" fontSize="4.5" fontWeight="bold" className="font-mono">SOFTPLUS</text>
+                    <text x="56" y="8" fill="#cbd5e1" fontSize="5" fontWeight="bold" textAnchor="end" className="font-mono">out: {softplus.toFixed(2)}</text>
+                    <text x="4" y="50" fill="#64748b" fontSize="4" className="font-mono">sum: {combinedSum.toFixed(2)}</text>
+                  </g>
 
-                        {/* Output weight */}
-                        <rect x="168" y="5" width="32" height="20" rx="4" fill="#060a18" stroke="#475569" strokeWidth="1" />
-                        <text x="184" y="17" fill="#cbd5e1" fontSize="8" textAnchor="middle" className="font-mono">x -1.30</text>
-                        
-                        {/* Real-time value note bubble */}
-                        <text x="184" y="34" fill="#ef4444" fontSize="7.5" fontWeight="bold" textAnchor="middle" className="font-mono">{node1Val.toFixed(2)}</text>
-                      </g>
-
-                      {/* LOWER ACTIVE STREAM PATH BLOCK */}
-                      <g transform="translate(325, 180)">
-                        {/* Lower Multiplier box */}
-                        <rect x="0" y="25" width="40" height="20" rx="4" fill="#060a18" stroke="#475569" strokeWidth="1" />
-                        <text x="20" y="37" fill="#cbd5e1" fontSize="8" textAnchor="middle" className="font-mono">x -2.52</text>
-                        
-                        {/* Connecting Line */}
-                        <line x1="40" y1="35" x2="55" y2="35" stroke="#1e293b" strokeWidth="1.5" />
-                        <text x="47" y="31" fill="#475569" fontSize="7" className="font-mono" textAnchor="middle">{prodHumid >= 0 ? '+' : ''}{prodHumid.toFixed(2)}</text>
-
-                        {/* Lower Bias sum node */}
-                        <rect x="55" y="20" width="42" height="30" rx="5" fill="#030611" stroke="#f59e0b" strokeWidth="1.5" />
-                        <text x="76" y="32" fill="#f59e0b" fontSize="7" fontWeight="bold" textAnchor="middle" className="font-mono">BIAS (b)</text>
-                        <text x="76" y="44" fill="#fff" fontSize="10" fontWeight="bold" textAnchor="middle" className="font-mono">+{node2Bias.toFixed(2)}</text>
-
-                        {/* Connecting Line */}
-                        <line x1="97" y1="35" x2="103" y2="35" stroke="#1e293b" strokeWidth="1.5" />
-
-                        {/* Squiggle Activation Card (Sigmoid 2) */}
-                        <g>
-                          <rect x="103" y="8" width="60" height="54" rx="6" fill="#030611" stroke="#f59e0b" strokeWidth="1.5" />
-                          
-                          {/* Grid Axes */}
-                          <line x1="103" y1="35" x2="163" y2="35" stroke="#141d35" strokeWidth="0.8" strokeDasharray="1 2" />
-                          <line x1="133" y1="8" x2="133" y2="62" stroke="#141d35" strokeWidth="0.8" strokeDasharray="1 2" />
-
-                          {/* Plotted Sigmoid curve */}
-                          {(() => {
-                            const points = [];
-                            for (let i = 0; i <= 10; i++) {
-                              const t = i / 10;
-                              const zVal = -6 + t * 12;
-                              const act = 1 / (1 + Math.exp(-zVal));
-                              const px = 103 + t * 60;
-                              const py = 58 - act * 46;
-                              points.push(`${px},${py}`);
-                            }
-                            return <polyline points={points.join(' ')} fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" />;
-                          })()}
-
-                          {/* Dynamic Input Value Marker */}
-                          {(() => {
-                            const clampedZ2 = Math.max(-6, Math.min(6, node2PreAct));
-                            const dotT2 = (clampedZ2 - (-6)) / 12;
-                            const dotX2 = 103 + dotT2 * 60;
-                            const dotY2 = 58 - squiggle2 * 46;
-                            return (
-                              <g>
-                                <line x1={dotX2} y1="8" x2={dotX2} y2="62" stroke="rgba(245, 158, 11, 0.45)" strokeWidth="0.8" strokeDasharray="1 1" />
-                                <line x1="103" y1={dotY2} x2="163" y2={dotY2} stroke="rgba(245, 158, 11, 0.45)" strokeWidth="0.8" strokeDasharray="1 1" />
-                                <circle cx={dotX2} cy={dotY2} r="4" fill="#f59e0b" fillOpacity="0.4" className="animate-pulse" />
-                                <circle cx={dotX2} cy={dotY2} r="2.2" fill="#f59e0b" stroke="#fff" strokeWidth="0.8" />
-                              </g>
-                            );
-                          })()}
-
-                          {/* Mini Labels */}
-                          <text x="107" y="17" fill="#f59e0b" fontSize="5" fontWeight="bold" className="font-mono">SIGMOID</text>
-                          <text x="159" y="17" fill="#cbd5e1" fontSize="5.5" fontWeight="bold" textAnchor="end" className="font-mono">s2: {squiggle2.toFixed(2)}</text>
-                          <text x="107" y="58" fill="#64748b" fontSize="4.5" className="font-mono">z2: {node2PreAct.toFixed(1)}</text>
-                        </g>
-
-                        {/* Connecting Line */}
-                        <line x1="163" y1="35" x2="168" y2="35" stroke="#1e293b" strokeWidth="1.5" />
-
-                        {/* Output weight */}
-                        <rect x="168" y="25" width="32" height="20" rx="4" fill="#060a18" stroke="#475569" strokeWidth="1" />
-                        <text x="184" y="37" fill="#cbd5e1" fontSize="8" textAnchor="middle" className="font-mono">x 2.28</text>
-
-                        {/* Real-time value note bubble */}
-                        <text x="184" y="17" fill="#10b981" fontSize="7.5" fontWeight="bold" textAnchor="middle" className="font-mono">+{node2Val.toFixed(2)}</text>
-                      </g>
-
-                      {/* SUMMING JUNCTION: Σ */}
-                      <g transform="translate(500, 135)">
-                        <circle cx="25" cy="25" r="22" fill="#a855f7" fillOpacity="0.1" stroke="#a855f7" strokeWidth="2.5" />
-                        <text x="25" y="32" fill="#fff" fontSize="22" fontWeight="black" textAnchor="middle">Σ</text>
-                        
-                        {/* Offset line and tooltip text */}
-                        <text x="25" y="-12" fill="#a855f7" fontSize="8" fontWeight="black" textAnchor="middle" className="font-mono">+ bias (b)</text>
-                        <text x="25" y="-3" fill="#fff" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono">+0.10</text>
-                        
-                        {/* Real-time sum result */}
-                        <text x="25" y="60" fill="#a855f7" fontSize="9" fontWeight="black" textAnchor="middle" className="font-mono">= {combinedSum.toFixed(2)}</text>
-                      </g>
-
-                      {/* SOFTPLUS (Activation) */}
-                      <g transform="translate(565, 125)">
-                        <rect x="0" y="0" width="60" height="54" rx="6" fill="#030611" stroke="#10b981" strokeWidth="1.5" />
-                        
-                        {/* Grid Axes */}
-                        <line x1="0" y1="27" x2="60" y2="27" stroke="#141d35" strokeWidth="0.8" strokeDasharray="1 2" />
-                        <line x1="30" y1="0" x2="30" y2="54" stroke="#141d35" strokeWidth="0.8" strokeDasharray="1 2" />
-
-                        {/* Plotted Softplus curve */}
-                        {(() => {
-                          const points = [];
-                          for (let i = 0; i <= 10; i++) {
-                            const t = i / 10;
-                            const zVal = -4 + t * 8;
-                            const act = Math.log(1 + Math.exp(zVal));
-                            const px = t * 60;
-                            const py = 50 - (Math.min(4, act) / 4) * 40;
-                            points.push(`${px},${py}`);
-                          }
-                          return <polyline points={points.join(' ')} fill="none" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" />;
-                        })()}
-
-                        {/* Dynamic Input Value Marker */}
-                        {(() => {
-                          const clampedSum = Math.max(-4, Math.min(4, combinedSum));
-                          const dotT3 = (clampedSum - (-4)) / 8;
-                          const dotX3 = dotT3 * 60;
-                          const dotY3 = 50 - (Math.min(4, softplus) / 4) * 40;
-                          return (
-                            <g>
-                              <line x1={dotX3} y1="0" x2={dotX3} y2="54" stroke="rgba(16, 185, 129, 0.45)" strokeWidth="0.8" strokeDasharray="1 1" />
-                              <line x1="0" y1={dotY3} x2="60" y2={dotY3} stroke="rgba(16, 185, 129, 0.45)" strokeWidth="0.8" strokeDasharray="1 1" />
-                              <circle cx={dotX3} cy={dotY3} r="4" fill="#10b981" fillOpacity="0.4" className="animate-pulse" />
-                              <circle cx={dotX3} cy={dotY3} r="2.2" fill="#10b981" stroke="#fff" strokeWidth="0.8" />
-                            </g>
-                          );
-                        })()}
-
-                        {/* Mini Labels */}
-                        <text x="4" y="8" fill="#10b981" fontSize="4.5" fontWeight="bold" className="font-mono">SOFTPLUS</text>
-                        <text x="56" y="8" fill="#cbd5e1" fontSize="5" fontWeight="bold" textAnchor="end" className="font-mono">out: {softplus.toFixed(2)}</text>
-                        <text x="4" y="50" fill="#64748b" fontSize="4" className="font-mono">sum: {combinedSum.toFixed(2)}</text>
-                      </g>
-
-                      {/* FINAL OUTPUT (EFFICACY) */}
+                  {/* FINAL OUTPUT (WEATHER STATE) */}
+                  {(() => {
+                    let strokeColor = "#f59e0b"; // Sunny
+                    let bgOpacity = 0.1;
+                    let textVal = "SUNNY";
+                    if (softplus < 0.8) {
+                      strokeColor = "#38bdf8"; // Rainy
+                      textVal = "RAINY";
+                    } else if (softplus <= 1.4) {
+                      strokeColor = "#94a3b8"; // Cloudy
+                      textVal = "CLOUDY";
+                    }
+                    return (
                       <g transform="translate(565, 205)">
-                        <rect x="0" y="0" width="60" height="50" rx="8" fill="#10b981" fillOpacity="0.1" stroke="#10b981" strokeWidth="2.5" className="animate-pulse" />
-                        <text x="30" y="14" fill="#10b981" fontSize="8" fontWeight="black" textAnchor="middle" className="font-mono uppercase tracking-widest">OUTPUT</text>
-                        <text x="30" y="24" fill="#94a3b8" fontSize="7" textAnchor="middle" className="font-mono">(Efficacy)</text>
-                        <text x="30" y="42" fill="#fff" fontSize="14" fontWeight="black" textAnchor="middle" className="font-mono">{softplus.toFixed(2)}</text>
+                        <rect x="0" y="0" width="60" height="50" rx="8" fill={strokeColor} fillOpacity={bgOpacity} stroke={strokeColor} strokeWidth="2.5" className="animate-pulse" />
+                        <text x="30" y="14" fill={strokeColor} fontSize="8" fontWeight="black" textAnchor="middle" className="font-mono uppercase tracking-widest">OUTPUT</text>
+                        <text x="30" y="24" fill="#94a3b8" fontSize="6.5" textAnchor="middle" className="font-mono">({textVal})</text>
+                        <text x="30" y="42" fill="#fff" fontSize="13" fontWeight="black" textAnchor="middle" className="font-mono">{softplus.toFixed(2)}</text>
                       </g>
-                    </svg>
+                    );
+                  })()}
+                </svg>
 
-                    {/* Animated flows note */}
-                    <div className="absolute top-4 left-4 text-[9px] font-mono text-slate-500 uppercase flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-                      Live Feed Neural Propagation Map
+                {/* Animated flows note */}
+                <div className="absolute top-4 left-4 text-[9px] font-mono text-slate-500 uppercase flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                  Live Feed Neural Propagation Map
+                </div>
+              </div>
+
+              {/* Right: Calculations & Interpretation Details */}
+              <div className="lg:col-span-4 flex flex-col gap-4">
+                {/* Weight explanation */}
+                <div className="bg-[#030611] border border-[#141d35]/60 rounded-2xl p-4 space-y-2">
+                  <div className="flex justify-between items-center border-b border-slate-900 pb-1.5">
+                    <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">1) WEIGHTS INFLUENCE</span>
+                    <HelpCircle size={12} className="text-slate-500" />
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-300">
+                    <div className="flex items-start gap-2">
+                      <span className="text-[#10b981] font-mono text-sm leading-none">•</span>
+                      <p className="leading-relaxed text-slate-400">
+                        <strong>w1 = -2.50</strong>: Temperature reduces the inhibitory Node 1, disinhibiting the network to favor Sunny weather.
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-[#ef4444] font-mono text-sm leading-none">•</span>
+                      <p className="leading-relaxed text-slate-400">
+                        <strong>w2 = -2.50</strong>: Humidity reduces the excitatory Node 2 bias, lowering overall activation to favor Rainy weather.
+                      </p>
                     </div>
                   </div>
+                </div>
 
-                  {/* Right: Calculations & Interpretation Details */}
-                  <div className="lg:col-span-4 flex flex-col gap-4">
-                    {/* Weight explanation */}
-                    <div className="bg-[#030611] border border-[#141d35]/60 rounded-2xl p-4 space-y-2">
-                      <div className="flex justify-between items-center border-b border-slate-900 pb-1.5">
-                        <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">1) WEIGHTS INFLUENCE</span>
-                        <HelpCircle size={12} className="text-slate-500" />
-                      </div>
-                      <div className="space-y-2 text-xs text-slate-300">
-                        <div className="flex items-start gap-2">
-                          <span className="text-[#10b981] font-mono text-sm leading-none">•</span>
-                          <p className="leading-relaxed text-slate-400">
-                            <strong>w1 = +0.80</strong>: Temperature increases active response and chance of Sunny.
-                          </p>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <span className="text-[#ef4444] font-mono text-sm leading-none">•</span>
-                          <p className="leading-relaxed text-slate-400">
-                            <strong>w2 = -0.50</strong>: Humidity decreases active response and chance of Sunny.
-                          </p>
-                        </div>
-                      </div>
+                {/* Bias shifts description */}
+                <div className="bg-[#030611] border border-[#141d35]/60 rounded-2xl p-4 space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-900 pb-1.5">2) DYNAMIC BIAS SHIFTS</span>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Bias shifts the activation threshold, giving the model flexibility to fit environmental variations:
+                  </p>
+                  <div className="bg-[#050a18] border border-slate-900/40 p-2.5 rounded-xl text-xs font-mono space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Node 1 Bias:</span>
+                      <span className="text-[#0284c7] font-bold">1.42 + ({weatherTemperature.toFixed(2)} * -2.50) = {node1Bias.toFixed(2)}</span>
                     </div>
-
-                    {/* Bias shifts description */}
-                    <div className="bg-[#030611] border border-[#141d35]/60 rounded-2xl p-4 space-y-2">
-                      <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-900 pb-1.5">2) DYNAMIC BIAS SHIFTS</span>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        Bias shifts the activation threshold, giving the model flexibility to fit environmental variations:
-                      </p>
-                      <div className="bg-[#050a18] border border-slate-900/40 p-2.5 rounded-xl text-xs font-mono space-y-1">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Node 1 Bias:</span>
-                          <span className="text-[#0284c7] font-bold">1.42 + ({weatherTemperature.toFixed(2)} * 0.80) = {node1Bias.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Node 2 Bias:</span>
-                          <span className="text-[#f59e0b] font-bold">1.39 + ({weatherHumidity.toFixed(2)} * -0.50) = {node2Bias.toFixed(2)}</span>
-                        </div>
-                      </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Node 2 Bias:</span>
+                      <span className="text-[#f59e0b] font-bold">1.39 + ({weatherHumidity.toFixed(2)} * -2.50) = {node2Bias.toFixed(2)}</span>
                     </div>
+                  </div>
+                </div>
 
-                    {/* Math Functions used */}
-                    <div className="bg-[#030611] border border-[#141d35]/60 rounded-2xl p-4 space-y-2">
-                      <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-900 pb-1.5">3 & 4) ACTIVATION FORMULAS</span>
-                      <div className="space-y-2">
-                        <div className="bg-[#050a18] p-2 rounded-xl text-center border border-slate-900/50">
-                          <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">3) SQUIGGLE (Sigmoid)</span>
-                          <span className="text-xs font-mono font-black text-purple-400">f(x) = 1 / (1 + e^-x)</span>
-                          <p className="text-[10px] text-slate-500 mt-1 leading-normal">Adds non-linearity. Squeezes any value into range (0, 1).</p>
-                        </div>
-                        <div className="bg-[#050a18] p-2 rounded-xl text-center border border-slate-900/50">
-                          <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">4) SOFTPLUS FUNCTION</span>
-                          <span className="text-xs font-mono font-black text-emerald-400">f(x) = ln(1 + e^x)</span>
-                          <p className="text-[10px] text-slate-500 mt-1 leading-normal">Smooth version of ReLU. Always outputs positive efficacy scores.</p>
-                        </div>
-                      </div>
+                {/* Math Functions used */}
+                <div className="bg-[#030611] border border-[#141d35]/60 rounded-2xl p-4 space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-900 pb-1.5">3 & 4) ACTIVATION FORMULAS</span>
+                  <div className="space-y-2">
+                    <div className="bg-[#050a18] p-2 rounded-xl text-center border border-slate-900/50">
+                      <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">3) SQUIGGLE (Sigmoid)</span>
+                      <span className="text-xs font-mono font-black text-purple-400">f(x) = 1 / (1 + e^-x)</span>
+                      <p className="text-[10px] text-slate-500 mt-1 leading-normal">Adds non-linearity. Squeezes any value into range (0, 1).</p>
                     </div>
+                    <div className="bg-[#050a18] p-2 rounded-xl text-center border border-slate-900/50">
+                      <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">4) SOFTPLUS FUNCTION</span>
+                      <span className="text-xs font-mono font-black text-emerald-400">f(x) = ln(1 + e^x)</span>
+                      <p className="text-[10px] text-slate-500 mt-1 leading-normal">Smooth version of ReLU. Always outputs positive efficacy scores.</p>
+                    </div>
+                  </div>
+                </div>
 
-                    {/* Interpretation summary box */}
-                    <div className="bg-gradient-to-br from-amber-950/20 to-yellow-950/20 border border-amber-500/10 p-4 rounded-2xl text-xs space-y-2">
-                      <div className="flex items-center gap-2 text-amber-400 font-bold">
-                        <Sparkles size={14} className="animate-pulse" />
+                {/* Interpretation summary box */}
+                {(() => {
+                  let bgGrad = "from-amber-950/20 to-yellow-950/20 border-amber-500/10";
+                  let textColor = "text-amber-400";
+                  let weatherLabel = "Sunny";
+                  let weatherIndicator = "STRONG";
+                  let indicatorColor = "text-amber-400";
+
+                  if (softplus < 0.8) {
+                    bgGrad = "from-sky-950/20 to-blue-950/20 border-sky-500/15";
+                    textColor = "text-sky-400";
+                    weatherLabel = "Rainy";
+                    weatherIndicator = "WEAK";
+                    indicatorColor = "text-sky-400";
+                  } else if (softplus <= 1.4) {
+                    bgGrad = "from-slate-950/40 to-slate-900/40 border-slate-700/20";
+                    textColor = "text-slate-400";
+                    weatherLabel = "Cloudy";
+                    weatherIndicator = "MODERATE";
+                    indicatorColor = "text-slate-300";
+                  }
+
+                  return (
+                    <div className={`bg-gradient-to-br ${bgGrad} border p-4 rounded-2xl text-xs space-y-2`}>
+                      <div className={`flex items-center gap-2 ${textColor} font-bold`}>
+                        {softplus > 1.4 ? (
+                          <Sun size={14} className="animate-spin" style={{ animationDuration: '20s' }} />
+                        ) : softplus < 0.8 ? (
+                          <CloudRain size={14} className="animate-bounce" />
+                        ) : (
+                          <Cloud size={14} className="animate-pulse" />
+                        )}
                         <span className="uppercase tracking-wider">SYSTEM INTERPRETATION</span>
                       </div>
                       <ul className="space-y-1.5 text-slate-400 list-disc pl-4 leading-relaxed text-[11px]">
                         <li>High Temperature ({weatherTemperature.toFixed(2)}) strongly pushes the score up (positive weight).</li>
                         <li>Low Humidity ({weatherHumidity.toFixed(2)}) reduces the score (negative weight), but is compensated.</li>
-                        <li>Final Efficacy score of <strong className="text-white text-xs">{softplus.toFixed(2)}</strong> indicates a <strong className="text-emerald-400">{softplus > 1.2 ? 'STRONG' : (softplus < 0.8 ? 'WEAK' : 'MODERATE')}</strong> chance of <strong className="text-emerald-400 uppercase">Sunny weather</strong>!</li>
+                        <li>
+                          Final Efficacy score of <strong className="text-white text-xs">{softplus.toFixed(2)}</strong> indicates a <strong className={indicatorColor}>{weatherIndicator}</strong> chance of <strong className={`${textColor} uppercase`}>{weatherLabel} weather</strong>!
+                        </li>
                       </ul>
                     </div>
+                  );
+                })()}
 
-                  </div>
-                </div>
-              );
-            })()}
+              </div>
+            </div>
 
           </div>
         </div>

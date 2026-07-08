@@ -58,7 +58,6 @@ export default function VisualArchitecturePanel({
   const [viewMode, setViewMode] = useState<'2D' | '3D'>('3D');
   const [showValues, setShowValues] = useState<boolean>(true);
   const [showWeights, setShowWeights] = useState<boolean>(true);
-  const [displayMetric, setDisplayMetric] = useState<'activation' | 'gradient'>('activation');
   const [isPaused, setIsPaused] = useState<boolean>(false);
 
   const formatGradient = (val: number) => {
@@ -437,38 +436,11 @@ export default function VisualArchitecturePanel({
               <span className="text-slate-400 font-semibold group-hover:text-slate-200 transition-colors">Show Synapse Weights</span>
               <input 
                 type="checkbox" 
-                checked={showWeights}
+                 checked={showWeights}
                 onChange={(e) => setShowWeights(e.target.checked)}
                 className="w-4 h-4 rounded border-slate-800 text-indigo-600 focus:ring-indigo-500"
               />
             </label>
-
-            {/* Node Display Metric Selector toggle */}
-            <div className="flex items-center justify-between text-xs group pt-1">
-              <span className="text-slate-400 font-semibold">Node Metric</span>
-              <div className="flex bg-slate-950 border border-slate-850 p-0.5 rounded-lg">
-                <button
-                  onClick={() => setDisplayMetric('activation')}
-                  className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
-                    displayMetric === 'activation'
-                      ? 'bg-indigo-950 border border-indigo-500/30 text-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.15)]'
-                      : 'text-slate-500 hover:text-slate-350'
-                  }`}
-                >
-                  Signal
-                </button>
-                <button
-                  onClick={() => setDisplayMetric('gradient')}
-                  className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
-                    displayMetric === 'gradient'
-                      ? 'bg-rose-950 border border-rose-500/30 text-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.15)]'
-                      : 'text-slate-500 hover:text-slate-350'
-                  }`}
-                >
-                  Gradient
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -790,6 +762,19 @@ export default function VisualArchitecturePanel({
                             className="transition-all duration-300"
                           />
 
+                          {/* Selected connection bright visual focus indicator */}
+                          {selectedConn?.id === conn.id && (
+                            <line
+                              x1={conn.pos1.x} y1={conn.pos1.y} x2={conn.pos2.x} y2={conn.pos2.y}
+                              stroke="#00ffff"
+                              strokeWidth={conn.strokeWidth + 8}
+                              strokeLinecap="round"
+                              opacity={conn.avgOpacity * 0.7}
+                              className="animate-pulse"
+                              style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 255, 0.8))' }}
+                            />
+                          )}
+
                           {/* Core connection cable line */}
                           <line
                             x1={conn.pos1.x} y1={conn.pos1.y} x2={conn.pos2.x} y2={conn.pos2.y}
@@ -868,6 +853,31 @@ export default function VisualArchitecturePanel({
                             style={{ '--pulse-color': strokeColor } as React.CSSProperties}
                           >
                             <g className={pulseClass}>
+                              {/* Selected node halo highlight */}
+                              {selectedNode?.id === node.id && (
+                                <g>
+                                  <circle
+                                    cx="0" cy="0" r={pos.radius + 8}
+                                    fill="transparent"
+                                    stroke="#ec4899"
+                                    strokeWidth="2"
+                                    strokeDasharray="4 3"
+                                    strokeOpacity={pos.opacity}
+                                    className="animate-spin"
+                                    style={{ animationDuration: '6s' }}
+                                  />
+                                  <circle
+                                    cx="0" cy="0" r={pos.radius + 12}
+                                    fill="transparent"
+                                    stroke="#ec4899"
+                                    strokeWidth="1.5"
+                                    strokeOpacity={pos.opacity * 0.8}
+                                    className="animate-pulse"
+                                    style={{ filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.8))' }}
+                                  />
+                                </g>
+                              )}
+
                               {/* Outer concentric neon halo (glowing indicator) */}
                               <circle
                                 cx="0" cy="0" r={pos.radius + 7.5}
@@ -914,14 +924,11 @@ export default function VisualArchitecturePanel({
                                   textAnchor="middle"
                                   fill="#ffffff"
                                   fillOpacity={pos.opacity}
-                                  fontSize={displayMetric === 'gradient' && !isInput && Math.abs(node.biasGradient) < 0.001 ? Math.max(5, Math.min(7, pos.radius * 0.42)) : Math.max(6, Math.min(9, pos.radius * 0.5))}
+                                  fontSize={Math.max(6, Math.min(9, pos.radius * 0.5))}
                                   fontWeight="bold"
                                   className="pointer-events-none font-mono"
                                 >
-                                  {displayMetric === 'gradient'
-                                    ? (isInput ? '--' : formatGradient(node.biasGradient))
-                                    : (isInput ? node.activation.toFixed(1) : isOutput ? node.activation.toFixed(2) : node.activation.toFixed(1))
-                                  }
+                                  {isInput ? node.activation.toFixed(1) : isOutput ? node.activation.toFixed(2) : node.activation.toFixed(1)}
                                 </text>
                               )}
 
@@ -1048,9 +1055,9 @@ export default function VisualArchitecturePanel({
                         </div>
                         <input 
                           type="range"
-                          min="-2.0"
-                          max="2.0"
-                          step="0.05"
+                          min="-5.0"
+                          max="5.0"
+                          step="0.01"
                           value={liveNode.bias}
                           onChange={(e) => onUpdateBias(liveNode.layerIndex, liveNode.nodeIndex, parseFloat(e.target.value))}
                           className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-pink-500"
@@ -1118,7 +1125,7 @@ export default function VisualArchitecturePanel({
                           type="range"
                           min="-3.0"
                           max="3.0"
-                          step="0.05"
+                          step="0.01"
                           value={liveConn.weight}
                           onChange={(e) => onUpdateWeight(liveConn.id, parseFloat(e.target.value))}
                           className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"

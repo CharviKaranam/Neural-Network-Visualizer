@@ -16,6 +16,7 @@ import {
   ChevronsRight,
   AlertCircle
 } from 'lucide-react';
+import { NetworkState } from '../types/network';
 
 interface DashboardPanelProps {
   customInputs: number[];
@@ -25,6 +26,8 @@ interface DashboardPanelProps {
   setActiveTab: (tab: string) => void;
   layers: any[];
   activation: string;
+  network?: NetworkState;
+  onUpdateInputSize?: (size: number) => void;
 }
 
 type InputMode = 'manual' | 'stream';
@@ -36,7 +39,9 @@ export default function DashboardPanel({
   networkOutputs,
   setActiveTab,
   layers,
-  activation
+  activation,
+  network,
+  onUpdateInputSize
 }: DashboardPanelProps) {
   const [pulseTime, setPulseTime] = useState(0);
   const [showStatus, setShowStatus] = useState(true);
@@ -151,6 +156,10 @@ export default function DashboardPanel({
       data = generateClusterPoints();
     }
 
+    if (onUpdateInputSize) {
+      onUpdateInputSize(3);
+    }
+
     setStreamDataset({ name, rows: data });
     setCurrentStreamIndex(0);
     setIsStreamingActive(true);
@@ -230,7 +239,10 @@ export default function DashboardPanel({
             if (/[a-zA-Z]/.test(cleanLine) && !cleanLine.includes('e-') && !cleanLine.includes('e+')) {
               return;
             }
-            const parts = cleanLine.split(/[\s,;\t]+/).map(v => Number(v)).filter(v => !isNaN(v));
+            const parts = cleanLine.split(/[\s,;\t]+/)
+              .filter(v => v.trim() !== "")
+              .map(v => Number(v))
+              .filter(v => !isNaN(v));
             if (parts.length > 0) {
               parsedRows.push(parts);
             }
@@ -242,11 +254,19 @@ export default function DashboardPanel({
           return;
         }
 
-        // Standardize columns to size of 3 inputs (L0)
+        // Detect number of columns in the uploaded file dynamically
+        const fileColCount = parsedRows[0]?.length || 3;
+        const targetInputSize = Math.max(1, Math.min(8, fileColCount));
+
+        if (onUpdateInputSize) {
+          onUpdateInputSize(targetInputSize);
+        }
+
+        // Standardize columns to the dynamic target size
         const standardized = parsedRows.map(row => {
           const targetRow = [...row];
-          while (targetRow.length < 3) targetRow.push(0);
-          return targetRow.slice(0, 3);
+          while (targetRow.length < targetInputSize) targetRow.push(0);
+          return targetRow.slice(0, targetInputSize);
         });
 
         // Normalize to fit beautiful visualization range [-2.0, 2.0]
@@ -261,7 +281,14 @@ export default function DashboardPanel({
         if (normalized.length > 0) {
           onSetCustomInputs(normalized[0]);
         }
-        showToastNotification(`Uploaded raw dataset: ${file.name} (${normalized.length} rows scaled)`);
+        
+        let message = `Uploaded dataset: ${file.name} (${normalized.length} rows, ${fileColCount} cols).`;
+        if (fileColCount > 8) {
+          message += ` Adjusted input layer to visualizer limit (8 nodes).`;
+        } else {
+          message += ` Adjusted input layer (L0) to match: ${targetInputSize} nodes.`;
+        }
+        showToastNotification(message);
 
       } catch (err: any) {
         setUploadError(`Formatting error: ${err.message || 'Invalid structure'}`);
@@ -302,8 +329,9 @@ export default function DashboardPanel({
   }, [isPlayingLiveActivity]);
 
   // Safe probability calculations (Softmax)
-  const totalOutputs = networkOutputs.length || 3;
-  const expOutputs = networkOutputs.map(v => Math.exp(Math.min(10, Math.max(-10, v))));
+  const safeNetworkOutputs = networkOutputs.map(v => (typeof v !== 'number' || isNaN(v) ? 0 : v));
+  const totalOutputs = safeNetworkOutputs.length || 3;
+  const expOutputs = safeNetworkOutputs.map(v => Math.exp(Math.min(10, Math.max(-10, v))));
   const sumExp = expOutputs.reduce((a, b) => a + b, 0) || 1;
   const probabilities = expOutputs.map(v => v / sumExp);
 
@@ -471,7 +499,7 @@ export default function DashboardPanel({
             {/* Manual Controls Panel */}
             {inputMode === 'manual' ? (
               <div className="space-y-4">
-                {customInputs.slice(0, 3).map((val, idx) => (
+                {customInputs.map((val, idx) => (
                   <div key={idx} className="space-y-1.5">
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-bold text-slate-300 font-mono flex items-center gap-1.5">
@@ -490,7 +518,7 @@ export default function DashboardPanel({
                       </button>
                       <input 
                         type="text" 
-                        value={val !== undefined ? val.toFixed(1) : "0.0"}
+                        value={(val !== undefined && !isNaN(val)) ? val.toFixed(1) : "0.0"}
                         onChange={(e) => handleDirectInput(idx, e.target.value)}
                         className="bg-transparent text-center text-sm font-black text-white font-mono w-16 focus:outline-none selection:bg-cyan-500/30"
                       />
@@ -569,7 +597,7 @@ export default function DashboardPanel({
                       Upload Custom Dataset
                     </span>
                     <span className="text-[9px] text-slate-500 font-semibold block leading-tight">
-                      Drop CSV, JSON, or TXT (3 columns) or Click to select
+                      Drop CSV, JSON, or TXT or Click to select
                     </span>
                   </div>
                 </div>
@@ -623,10 +651,28 @@ export default function DashboardPanel({
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500/5 via-transparent to-transparent pointer-events-none" />
 
           {/* Svg container */}
-          <div className="w-full h-[240px] relative flex items-center justify-center">
-            <div className="absolute top-0 left-2 text-[9px] font-mono font-black text-cyan-400 tracking-widest uppercase bg-cyan-950/20 px-2 py-0.5 rounded border border-cyan-900/30">Input L0</div>
-            <div className="absolute top-0 left-[43%] text-[9px] font-mono font-black text-purple-400 tracking-widest uppercase bg-purple-950/20 px-2 py-0.5 rounded border border-purple-900/30">Hidden L1</div>
-            <div className="absolute top-0 right-2 text-[9px] font-mono font-black text-orange-400 tracking-widest uppercase bg-orange-950/20 px-2 py-0.5 rounded border border-orange-900/30">Output L2</div>
+          <div className="w-full h-[240px] relative flex items-center justify-center pt-8">
+            {layers.map((layer, lIdx) => {
+              const isInput = lIdx === 0;
+              const isOutput = lIdx === layers.length - 1;
+              const label = isInput ? 'Input L0' : isOutput ? `Output L${lIdx}` : `Hidden H${lIdx}`;
+              const textColor = isInput ? 'text-cyan-400' : isOutput ? 'text-orange-400' : 'text-purple-400';
+              const borderColor = isInput ? 'border-cyan-900/30' : isOutput ? 'border-orange-900/30' : 'border-purple-900/30';
+              const bgColor = isInput ? 'bg-cyan-950/20' : isOutput ? 'bg-orange-950/20' : 'bg-purple-950/20';
+              
+              const xPos = 40 + (lIdx / (layers.length - 1)) * 370;
+              const leftPercent = `${(xPos / 450) * 100}%`;
+
+              return (
+                <div 
+                  key={lIdx}
+                  className={`absolute top-0 text-[8px] font-mono font-black ${textColor} tracking-wider uppercase ${bgColor} px-1.5 py-0.5 rounded border ${borderColor} -translate-x-1/2 whitespace-nowrap`}
+                  style={{ left: leftPercent }}
+                >
+                  {label}
+                </div>
+              );
+            })}
 
             <svg className="w-full h-full" viewBox="0 0 450 200" style={{ overflow: 'visible' }}>
               {/* Dynamic Connection lines */}
@@ -732,24 +778,34 @@ export default function DashboardPanel({
                       const cy = getNodeY(nIdx, layer.size);
 
                       let strokeWidth = "1.8";
-                      let rInner = "5";
+                      let rInner = "6";
                       if (isInput) {
                         const isActive = Math.abs(customInputs[nIdx] || 0) > 0.5;
                         strokeWidth = isActive ? "3" : "1.8";
-                        rInner = isActive ? "8" : "6";
+                        rInner = isActive ? "9" : "7";
                       } else if (isOutput) {
                         const prob = probabilities[nIdx] || 0.15;
                         const isMax = prob === Math.max(...probabilities);
                         strokeWidth = isMax ? "3" : "1.8";
-                        rInner = isMax ? "8" : "5";
+                        rInner = isMax ? "9" : "6";
                       }
+
+                      const activationValue = network?.neurons?.[lIdx]?.[nIdx]?.activation;
+                      const displayValue = activationValue !== undefined 
+                        ? activationValue.toFixed(1) 
+                        : (isInput 
+                            ? (customInputs[nIdx] ?? 0).toFixed(1) 
+                            : (isOutput && networkOutputs[nIdx] !== undefined 
+                                ? networkOutputs[nIdx].toFixed(1) 
+                                : "0.0")
+                          );
 
                       return (
                         <g key={nIdx}>
                           <circle 
                             cx={cx} 
                             cy={cy} 
-                            r={isInput || isOutput ? "16" : "13"} 
+                            r={isInput || isOutput ? "19" : "15"} 
                             fill="#02050e" 
                             stroke={nodeColor} 
                             strokeWidth={strokeWidth} 
@@ -761,9 +817,21 @@ export default function DashboardPanel({
                             cy={cy} 
                             r={rInner} 
                             fill={nodeColor} 
+                            fillOpacity={0.3}
                             className={isInput || isOutput ? "transition-all duration-300" : "animate-pulse"}
                             style={isInput || isOutput ? undefined : { animationDuration: `${1.5 + nIdx * 0.3}s` }}
                           />
+                          <text
+                            x={cx}
+                            y={cy + 2.5}
+                            textAnchor="middle"
+                            fill="#ffffff"
+                            fontSize={isInput || isOutput ? "8px" : "7px"}
+                            fontWeight="black"
+                            className="pointer-events-none font-mono select-none"
+                          >
+                            {displayValue}
+                          </text>
                         </g>
                       );
                     })}
@@ -793,7 +861,7 @@ export default function DashboardPanel({
             </div>
 
             <div className="space-y-4">
-              {probabilities.slice(0, 3).map((prob, idx) => {
+              {probabilities.map((prob, idx) => {
                 const isMax = prob === Math.max(...probabilities);
                 return (
                   <div key={idx} className="space-y-1.5">
@@ -806,7 +874,7 @@ export default function DashboardPanel({
                           ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' 
                           : 'bg-[#030611] text-slate-500 border border-[#141d35]'
                       }`}>
-                        {prob.toFixed(2)}
+                        {(isNaN(prob) ? 0 : prob).toFixed(2)}
                       </span>
                     </div>
 
@@ -817,7 +885,7 @@ export default function DashboardPanel({
                             ? 'bg-gradient-to-r from-orange-500 to-amber-400 shadow-[0_0_8px_rgba(249,115,22,0.5)]' 
                             : 'bg-slate-800/40'
                         }`}
-                        style={{ width: `${prob * 100}%` }}
+                        style={{ width: `${(isNaN(prob) ? 0 : prob) * 100}%` }}
                       />
                     </div>
                   </div>
@@ -838,7 +906,7 @@ export default function DashboardPanel({
               <div className="text-right space-y-0.5">
                 <span className="text-[8px] font-mono font-black text-slate-500 uppercase tracking-widest block">Confidence</span>
                 <span className="text-sm font-black text-emerald-400 font-mono tracking-tighter">
-                  {(prediction.confidence * 100).toFixed(1)}%
+                  {(isNaN(prediction.confidence) ? 0 : prediction.confidence * 100).toFixed(1)}%
                 </span>
               </div>
             </div>
@@ -1031,13 +1099,13 @@ export default function DashboardPanel({
                           <span className={`w-1.5 h-1.5 rounded-full ${isCurrent ? 'bg-cyan-400 animate-ping' : 'bg-transparent'}`} />
                           <span className="font-bold text-slate-400">FRAME #{String(idx + 1).padStart(3, '0')}</span>
                           <span className="tracking-tighter">
-                            Inputs: <b className="text-slate-350 font-bold">[{rowVal.map(v => v.toFixed(2)).join(', ')}]</b>
+                            Inputs: <b className="text-slate-350 font-bold">[{rowVal.map(v => (v !== undefined && !isNaN(v) ? v.toFixed(2) : "0.00")).join(', ')}]</b>
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-right">
                           <span>Output Predicts:</span>
                           <span className={`font-black uppercase tracking-wide ${isCurrent ? mockPred.color : 'text-slate-500'}`}>
-                            {isCurrent ? `${mockPred.label} (${(mockPred.confidence * 100).toFixed(0)}%)` : '--'}
+                            {isCurrent ? `${mockPred.label} (${(isNaN(mockPred.confidence) ? 0 : mockPred.confidence * 100).toFixed(0)}%)` : '--'}
                           </span>
                         </div>
                       </div>
