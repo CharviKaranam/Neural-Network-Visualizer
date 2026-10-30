@@ -8,6 +8,8 @@ Built using React and TypeScript, the application implements a custom neural net
 
 It combines interactive 2D and 3D network visualizations, mathematical equation breakdowns, performance graphs, and synthesized audio feedback to provide an intuitive learning experience.
 
+🔗 **Live Demo:** https://neural-network-visualizer-144393663884.asia-southeast1.run.app
+
 ---
 
 ## 🌟 Overview
